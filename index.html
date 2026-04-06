@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CyberAware — Attack Simulation Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #d6f5f0;
+  --bg2: rgba(255,255,255,0.72);
+  --bg3: rgba(220,248,244,0.75);
+  --bg4: rgba(190,238,232,0.85);
+  --border: rgba(0,150,130,0.18);
+  --border2: rgba(0,140,120,0.35);
+  --text: #062e2a;
+  --text2: #1a5c52;
+  --text3: #5a9e94;
+  --accent: #009688;
+  --accent2: #00796b;
+  --green: #1b9e6e;
+  --green2: #17845c;
+  --red: #d42a4a;
+  --red2: #b01e3c;
+  --orange: #c96820;
+  --yellow: #a07010;
+  --purple: #00bfa5;
+  --purple2: #00897b;
+  --corporate: #0097a7;
+  --banks: #b45309;
+  --general: #0f7d58;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+  --r: 12px;
+  --r2: 8px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+
+/* PARTICLE BACKGROUND */
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+
+body{background:#d6f5f0;color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden;}
+#root{min-height:100vh;position:relative;z-index:1;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ANIMATIONS */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes scan{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes glitch{0%,100%{clip-path:inset(0 0 98% 0)}25%{clip-path:inset(30% 0 50% 0)}50%{clip-path:inset(60% 0 10% 0)}75%{clip-path:inset(10% 0 80% 0)}}
+@keyframes ripple{0%{transform:scale(0);opacity:1}100%{transform:scale(4);opacity:0}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes barGrow{from{width:0}to{width:var(--w)}}
+@keyframes countUp{from{opacity:0}to{opacity:1}}
+@keyframes ping{0%{transform:scale(1);opacity:1}75%,100%{transform:scale(2);opacity:0}}
+@keyframes threatPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,68,102,0.4)}50%{box-shadow:0 0 0 8px rgba(255,68,102,0)}}
+
+.fadeIn{animation:fadeIn 0.4s ease forwards;}
+.slideIn{animation:slideIn 0.3s ease forwards;}
+
+/* LAYOUT */
+.app-shell{display:flex;min-height:100vh;}
+.sidebar{width:240px;background:rgba(255,255,255,0.78);backdrop-filter:blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform 0.3s;}
+.main-content{margin-left:240px;flex:1;min-height:100vh;background:transparent;}
+
+/* SIDEBAR */
+.sidebar-logo{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
+.logo-mark{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#00bfa5);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-text{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--text);letter-spacing:-0.5px;}
+.logo-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.1em;text-transform:uppercase;}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-section{padding:8px 16px 4px;font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.12em;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:400;transition:all 0.15s;border-left:2px solid transparent;position:relative;}
+.nav-item:hover{color:var(--text);background:rgba(0,150,135,0.07);}
+.nav-item.active{color:var(--accent);background:rgba(0,150,135,0.10);border-left-color:var(--accent);}
+.nav-icon{width:16px;text-align:center;font-size:14px;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;font-family:var(--font-mono);}
+.nav-badge.green{background:var(--green2);}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.user-card{display:flex;align-items:center;gap:10px;}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#00bfa5,var(--accent));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--font-mono);}
+.user-info{}
+.user-name{font-size:13px;font-weight:500;color:var(--text);}
+.user-role{font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.08em;}
+
+/* TOP BAR */
+.topbar{height:56px;background:rgba(255,255,255,0.72);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text);}
+.topbar-breadcrumb{font-size:12px;color:var(--text3);font-family:var(--font-mono);}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.topbar-btn{padding:7px 14px;border-radius:var(--r2);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:rgba(255,255,255,0.58);color:var(--text2);transition:all 0.15s;font-family:var(--font-body);}
+.topbar-btn:hover{color:var(--text);border-color:var(--border2);background:rgba(230,220,248,0.80);}
+.topbar-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+.topbar-btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.topbar-btn.danger{background:rgba(255,68,102,0.15);color:var(--red);border-color:rgba(255,68,102,0.3);}
+.topbar-btn.success{background:rgba(0,229,160,0.12);color:var(--green);border-color:rgba(0,229,160,0.3);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:ping 1.5s ease infinite;}
+
+/* CONTENT */
+.page-content{padding:24px;}
+.page-header{margin-bottom:24px;}
+.page-title{font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--text);line-height:1.2;margin-bottom:4px;}
+.page-sub{color:var(--text2);font-size:14px;}
+
+/* CARDS */
+.card{background:rgba(255,255,255,0.68);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+.card:hover{border-color:var(--border2);}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text);}
+.card-action{font-size:11px;color:var(--accent);cursor:pointer;font-family:var(--font-mono);}
+
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:rgba(255,255,255,0.68);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;transition:border-color 0.2s;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-color,var(--accent));}
+.stat-card:hover{border-color:var(--border2);}
+.stat-label{font-size:11px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;}
+.stat-value{font-family:var(--font-display);font-size:32px;font-weight:800;color:var(--text);line-height:1;margin-bottom:6px;}
+.stat-change{font-size:12px;color:var(--text3);}
+.stat-change.up{color:var(--green);}
+.stat-change.down{color:var(--red);}
+.stat-icon{position:absolute;top:16px;right:16px;font-size:20px;opacity:0.3;}
+
+/* GRIDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-12{display:grid;grid-template-columns:1fr 2fr;gap:16px;}
+.grid-21{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+
+/* TABLES */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;font-size:10px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;padding:8px 12px;border-bottom:1px solid var(--border);}
+td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(108,63,207,0.04);color:var(--text);}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;font-family:var(--font-mono);}
+.badge-red{background:rgba(212,42,74,0.12);color:var(--red);}
+.badge-green{background:rgba(27,158,110,0.12);color:var(--green);}
+.badge-yellow{background:rgba(160,112,16,0.12);color:var(--yellow);}
+.badge-blue{background:rgba(0,150,135,0.15);color:var(--accent);}
+.badge-purple{background:rgba(0,150,135,0.12);color:var(--purple);}
+.badge-orange{background:rgba(201,104,32,0.12);color:var(--orange);}
+.badge-gray{background:rgba(0,150,135,0.10);color:var(--text2);}
+
+/* PROGRESS */
+.progress-bar{height:4px;background:rgba(230,220,248,0.85);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:2px;transition:width 0.5s ease;}
+
+/* RISK SCORE */
+.risk-gauge{width:100%;height:8px;background:rgba(230,220,248,0.85);border-radius:4px;overflow:hidden;margin:8px 0;}
+.risk-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));}
+
+/* DOMAIN PILLS */
+.domain-corporate{color:var(--corporate);background:rgba(0,151,167,0.12);border:1px solid rgba(0,151,167,0.22);}
+.domain-banks{color:var(--banks);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.2);}
+.domain-general{color:var(--general);background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.2);}
+
+/* FORMS */
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:11px;color:var(--text3);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+.form-input{width:100%;background:rgba(255,255,255,0.82);border:1px solid var(--border);border-radius:var(--r2);padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;transition:border-color 0.15s;}
+.form-input:focus{border-color:var(--accent);}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238892a4' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.form-textarea{min-height:80px;resize:vertical;}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r2);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s;font-family:var(--font-body);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-secondary{background:rgba(255,255,255,0.70);color:var(--text2);border:1px solid var(--border);}
+.btn-secondary:hover{color:var(--text);border-color:var(--border2);}
+.btn-danger{background:rgba(212,42,74,0.10);color:var(--red);border:1px solid rgba(212,42,74,0.3);}
+.btn-danger:hover{background:rgba(212,42,74,0.18);}
+.btn-success{background:rgba(0,150,135,0.12);color:var(--accent);border:1px solid rgba(0,150,135,0.30);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-lg{padding:12px 24px;font-size:14px;}
+.btn-full{width:100%;justify-content:center;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);}
+.modal{background:rgba(255,255,255,0.90);backdrop-filter:blur(24px);border:1px solid var(--border2);border-radius:var(--r);width:90%;max-width:560px;max-height:85vh;overflow-y:auto;animation:fadeIn 0.25s ease;}
+.modal-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.modal-title{font-family:var(--font-display);font-weight:700;font-size:18px;}
+.modal-close{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);background:rgba(255,255,255,0.70);border:1px solid var(--border);font-size:16px;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:0 24px 24px;}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:rgba(180,235,228,0.60);border-radius:var(--r2);padding:3px;margin-bottom:20px;}
+.tab{flex:1;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;text-align:center;color:var(--text3);transition:all 0.15s;}
+.tab.active{background:rgba(255,255,255,0.90);color:var(--text);box-shadow:0 1px 3px rgba(0,130,115,0.18);}
+
+/* HEATMAP */
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.heatmap-cell{aspect-ratio:1;border-radius:3px;cursor:pointer;transition:transform 0.1s;}
+.heatmap-cell:hover{transform:scale(1.3);}
+
+/* ALERT / THREAT FEED */
+.threat-feed{display:flex;flex-direction:column;gap:8px;}
+.threat-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.60);border-radius:var(--r2);border:1px solid var(--border);transition:all 0.15s;cursor:pointer;}
+.threat-item:hover{border-color:var(--border2);}
+.threat-item.critical{border-left:3px solid var(--red);animation:threatPulse 2s ease infinite;}
+.threat-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.threat-content{flex:1;min-width:0;}
+.threat-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.threat-meta{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
+
+/* SCENARIO CARDS */
+.scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.scenario-card{background:rgba(255,255,255,0.62);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.scenario-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--domain-color,var(--accent));}
+.scenario-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.scenario-card.selected{border-color:var(--accent);background:rgba(0,150,135,0.10);}
+.scenario-num{font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-bottom:8px;}
+.scenario-name{font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--text);margin-bottom:6px;line-height:1.3;}
+.scenario-risk{font-size:11px;color:var(--text3);}
+
+/* LOGIN PAGE */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:transparent;position:relative;overflow:hidden;}
+.login-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,150,135,0.10) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(0,188,212,0.08) 0%,transparent 60%);pointer-events:none;}
+.login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,150,135,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,150,135,0.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+.login-box{width:100%;max-width:400px;position:relative;z-index:1;animation:fadeIn 0.5s ease;}
+.login-logo{text-align:center;margin-bottom:32px;}
+.login-logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),#00bfa5);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;animation:float 3s ease infinite;}
+.login-title{font-family:var(--font-display);font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:4px;}
+.login-sub{color:var(--text3);font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;}
+.login-card{background:rgba(255,255,255,0.82);backdrop-filter:blur(28px);border:1px solid var(--border);border-radius:var(--r);padding:28px;}
+.role-select{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.role-btn{padding:10px 8px;border-radius:var(--r2);border:1px solid var(--border);background:rgba(255,255,255,0.58);cursor:pointer;text-align:center;transition:all 0.15s;}
+.role-btn.active{border-color:var(--accent);background:rgba(0,150,135,0.12);}
+.role-btn-icon{font-size:18px;margin-bottom:4px;}
+.role-btn-label{font-size:11px;font-family:var(--font-mono);color:var(--text2);}
+.role-btn.active .role-btn-label{color:var(--accent);}
+
+/* PHISHING SIM PAGES */
+.sim-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.sim-container{width:100%;max-width:460px;}
+.sim-logo{text-align:center;margin-bottom:24px;}
+.sim-card{background:#fff;border-radius:8px;padding:28px;box-shadow:0 4px 24px rgba(0,0,0,0.15);}
+.sim-title{font-size:22px;font-weight:600;color:#111;margin-bottom:4px;}
+.sim-sub{font-size:14px;color:#555;margin-bottom:20px;}
+.sim-input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:6px;font-size:14px;margin-bottom:12px;outline:none;}
+.sim-input:focus{border-color:#0078d4;}
+.sim-btn{width:100%;padding:11px;background:#0078d4;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;}
+.sim-link{color:#0078d4;font-size:12px;text-decoration:underline;cursor:pointer;}
+.caught-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:500;animation:fadeIn 0.3s ease;backdrop-filter:blur(8px);}
+.caught-box{background:rgba(255,255,255,0.94);backdrop-filter:blur(24px);border:2px solid var(--red);border-radius:var(--r);padding:32px;max-width:440px;width:90%;text-align:center;animation:fadeIn 0.4s ease;}
+.caught-icon{font-size:48px;margin-bottom:16px;}
+.caught-title{font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--red);margin-bottom:8px;}
+.caught-desc{color:var(--text2);margin-bottom:20px;line-height:1.6;}
+
+/* TRAINING MODULE */
+.training-module{background:rgba(255,255,255,0.65);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.training-header{padding:20px 24px;background:linear-gradient(135deg,rgba(230,220,248,0.85),rgba(245,238,255,0.9));border-bottom:1px solid var(--border);}
+.training-body{padding:24px;}
+.quiz-option{padding:12px 16px;border:1px solid var(--border);border-radius:var(--r2);cursor:pointer;margin-bottom:8px;transition:all 0.15s;color:var(--text2);}
+.quiz-option:hover{border-color:var(--border2);color:var(--text);background:rgba(255,255,255,0.70);}
+.quiz-option.correct{border-color:var(--green);background:rgba(0,229,160,0.08);color:var(--green);}
+.quiz-option.wrong{border-color:var(--red);background:rgba(255,68,102,0.08);color:var(--red);}
+.quiz-option.selected{border-color:var(--accent);background:rgba(0,150,135,0.10);}
+
+/* CAMPAIGN WIZARD */
+.wizard-steps{display:flex;gap:0;margin-bottom:28px;position:relative;}
+.wizard-steps::before{content:'';position:absolute;top:14px;left:0;right:0;height:1px;background:var(--border);z-index:0;}
+.wizard-step{flex:1;text-align:center;position:relative;z-index:1;}
+.step-circle{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.72);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--font-mono);margin:0 auto 6px;color:var(--text3);}
+.wizard-step.done .step-circle{background:var(--green);border-color:var(--green);color:var(--bg);}
+.wizard-step.active .step-circle{background:var(--accent);border-color:var(--accent);color:var(--bg);}
+.step-label{font-size:10px;color:var(--text3);font-family:var(--font-mono);}
+.wizard-step.active .step-label{color:var(--accent);}
+
+/* DASHBOARD WIDGETS */
+.chart-bar-container{display:flex;flex-direction:column;gap:10px;}
+.chart-bar-row{display:flex;align-items:center;gap:12px;}
+.chart-bar-label{font-size:12px;color:var(--text2);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chart-bar-track{flex:1;height:6px;background:rgba(230,220,248,0.85);border-radius:3px;overflow:hidden;}
+.chart-bar-fill{height:100%;border-radius:3px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1);}
+.chart-bar-val{font-family:var(--font-mono);font-size:11px;color:var(--text3);width:32px;text-align:right;}
+
+/* MINI CHART */
+.sparkline{display:flex;align-items:flex-end;gap:2px;height:32px;}
+.spark-bar{flex:1;background:var(--accent);border-radius:2px;opacity:0.7;transition:opacity 0.15s;}
+.spark-bar:hover{opacity:1;}
+
+/* ACTIVITY FEED */
+.activity-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.activity-content{flex:1;}
+.activity-text{font-size:13px;color:var(--text2);line-height:1.4;}
+.activity-text strong{color:var(--text);}
+.activity-time{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px;}
+
+/* RISK SCORE RING */
+.score-ring-wrap{position:relative;width:120px;height:120px;margin:0 auto;}
+.score-ring-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-ring-num{font-family:var(--font-display);font-size:28px;font-weight:800;}
+.score-ring-label{font-size:10px;color:var(--text3);font-family:var(--font-mono);}
+
+/* CAMPAIGN STATUS */
+.campaign-row{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.58);border-radius:var(--r2);border:1px solid var(--border);cursor:pointer;transition:all 0.15s;}
+.campaign-row:hover{border-color:var(--border2);}
+.campaign-info{flex:1;min-width:0;}
+.campaign-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.campaign-meta{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
+.campaign-progress{width:80px;}
+
+/* NOTIFICATIONS */
+.notif-dot{width:6px;height:6px;border-radius:50%;background:var(--red);position:absolute;top:6px;right:6px;}
+
+/* TOOLTIP */
+.tooltip{position:relative;}
+.tooltip-text{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:rgba(240,232,255,0.96);color:var(--text);font-size:11px;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;border:1px solid var(--border2);font-family:var(--font-mono);opacity:0;transition:opacity 0.15s;z-index:100;}
+.tooltip:hover .tooltip-text{opacity:1;}
+
+/* REPORT PANEL */
+.report-stat{padding:16px;background:rgba(255,255,255,0.58);border-radius:var(--r2);border:1px solid var(--border);text-align:center;}
+.report-num{font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--text);}
+.report-lbl{font-size:11px;color:var(--text3);font-family:var(--font-mono);}
+
+/* SCENARIO PREVIEW MODAL */
+.sim-preview{background:#f5f5f5;border-radius:8px;padding:20px;border:1px solid #ddd;}
+.sim-preview * {font-family:'Arial',sans-serif;}
+.preview-label{font-size:10px;font-family:var(--font-mono)!important;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em;}
+
+/* NOTIFICATION BANNER */
+.banner{padding:10px 16px;border-radius:var(--r2);border:1px solid;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.banner-success{background:rgba(27,158,110,0.10);border-color:rgba(27,158,110,0.25);color:var(--green);}
+.banner-danger{background:rgba(212,42,74,0.10);border-color:rgba(212,42,74,0.25);color:var(--red);}
+.banner-info{background:rgba(0,150,135,0.10);border-color:rgba(0,150,135,0.30);color:var(--accent);}
+
+/* TOGGLE */
+.toggle{position:relative;width:40px;height:22px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:rgba(230,220,248,0.85);border-radius:11px;border:1px solid var(--border);transition:0.2s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:2px;bottom:2px;background:var(--text3);border-radius:50%;transition:0.2s;}
+.toggle input:checked + .toggle-slider{background:rgba(0,229,160,0.2);border-color:var(--green);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(18px);background:var(--green);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px;color:var(--text3);}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:0.4;}
+.empty-text{font-size:14px;color:var(--text3);}
+
+/* SCROLLABLE */
+.scrollable{overflow-y:auto;max-height:300px;}
+
+/* HIGHLIGHT SCAN LINE */
+.scan-overlay{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.scan-line{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,150,135,0.30),transparent);animation:scan 8s linear infinite;}
+
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .main-content{margin-left:0;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .scenario-grid{grid-template-columns:1fr 1fr;}
+  .grid-2,.grid-3,.grid-12,.grid-21{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ═══════════════════════════════════════════════════════════════
+// BACKEND CONNECTION
+// ═══════════════════════════════════════════════════════════════
+const SERVER_URL = 'https://cyberaware-backend-1zcl.onrender.com';
+
+async function apiCall(method, path, body = null) {
+  const token = localStorage.getItem('cyberaware_token');
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(`${SERVER_URL}${path}`, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'API error');
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+
+const SCENARIOS = {
+  corporate: [
+    { id:'c1', name:'Fake Microsoft 365 Login', risk:'CRITICAL', channel:'Email', desc:'Spoofed M365 login page stealing credentials via OAuth redirect', icon:'🏢', template:'m365' },
+    { id:'c2', name:'CEO Payment Request', risk:'CRITICAL', channel:'Email', desc:'Urgent vendor invoice from spoofed CFO email requesting wire transfer', icon:'💼', template:'ceo' },
+    { id:'c3', name:'IT Password Reset', risk:'HIGH', channel:'Email', desc:'Fake IT helpdesk email requesting immediate password change', icon:'🔑', template:'itreset' },
+    { id:'c4', name:'Slack OTP Request', risk:'HIGH', channel:'Slack', desc:'Impersonated Slack bot asking for 2FA OTP via internal message', icon:'💬', template:'slack' },
+    { id:'c5', name:'HR Salary Revision PDF', risk:'HIGH', channel:'Email', desc:'Fake HR bonus/salary document requiring login to view', icon:'📋', template:'hr' },
+  ],
+  banks: [
+    { id:'b1', name:'OTP Harvesting Page', risk:'CRITICAL', channel:'SMS', desc:'Fake bank portal capturing OTP entered after "suspicious activity" alert', icon:'🏦', template:'otp' },
+    { id:'b2', name:'KYC Update Alert', risk:'CRITICAL', channel:'Email', desc:'"Account blocked" panic trigger requiring immediate KYC re-verification', icon:'📄', template:'kyc' },
+    { id:'b3', name:'Card Blocked Alert', risk:'HIGH', channel:'SMS', desc:'Fake debit/credit card suspension notice with verification link', icon:'💳', template:'card' },
+    { id:'b4', name:'Money Credited Mistake', risk:'HIGH', channel:'Email', desc:'Psychological trick combining greed + fear of legal action', icon:'💰', template:'money' },
+    { id:'b5', name:'RBI Compliance Call', risk:'HIGH', channel:'Call', desc:'Automated call posing as RBI official demanding compliance details', icon:'📞', template:'rbi' },
+  ],
+  general: [
+    { id:'g1', name:'Aadhaar KYC Blocking SMS', risk:'CRITICAL', channel:'SMS', desc:'Fake UIDAI SMS claiming Aadhaar will be blocked within 24 hours', icon:'🪪', template:'aadhaar' },
+    { id:'g2', name:'CBI Arrest Threat Call', risk:'CRITICAL', channel:'Call', desc:'Fear-based call from "CBI officer" threatening immediate arrest', icon:'🚔', template:'cbi' },
+    { id:'g3', name:'Exam Result Portal', risk:'HIGH', channel:'Email', desc:'Fake university result portal harvesting student credentials', icon:'🎓', template:'exam' },
+    { id:'g4', name:'Courier Delivery Failure', risk:'HIGH', channel:'SMS', desc:'Fake delivery SMS from spoofed courier company with tracking link', icon:'📦', template:'courier' },
+    { id:'g5', name:'WhatsApp Ban Warning', risk:'HIGH', channel:'WhatsApp', desc:'"Your WhatsApp will be banned" message requiring immediate verification', icon:'📱', template:'whatsapp' },
+  ],
+};
+
+const ALL_SCENARIOS = [...SCENARIOS.corporate, ...SCENARIOS.banks, ...SCENARIOS.general];
+
+const TRAINING_MODULES = {
+  m365: { title:'How Microsoft 365 Phishing Works', points:['Always check the URL — Microsoft logins only happen at login.microsoftonline.com','Look for HTTPS and the green padlock before entering credentials','Enable MFA so stolen passwords alone cannot access your account','Report suspicious emails using the "Report Phishing" button in Outlook'], quiz:[{q:'What is the legitimate Microsoft login domain?',opts:['microsoft-login.com','login.microsoftonline.com','microsoft.com/login','office365.login.com'],a:1},{q:'What should you do if you receive a suspicious Microsoft login email?',opts:['Click the link to check if it\'s real','Enter your credentials to verify','Report it using the phishing report button','Forward it to colleagues'],a:2}]},
+  ceo: { title:'CEO Fraud & Business Email Compromise', points:['CFOs never ask for wire transfers via email alone — always call to verify','Check the sender\'s actual email address, not just the display name','Be extra suspicious of "urgent" or "confidential" payment requests','BEC attacks cost businesses $2.7B globally in 2022'], quiz:[{q:'You receive an urgent email from the CEO asking for a wire transfer. What do you do?',opts:['Process it immediately — it\'s urgent','Call the CEO directly to verify','Email the CEO to confirm','Ask your manager first, then process'],a:1},{q:'What is a key red flag in BEC attacks?',opts:['Normal business language','Urgency and secrecy requests','CC to multiple recipients','Professional email signature'],a:1}]},
+  itreset: { title:'Fake IT Password Reset Attacks', points:['Legitimate IT will never ask for your current password','IT password resets go through official ticketing systems, not email links','Verify any IT request by calling the helpdesk directly','Check the sender domain — IT will use your company\'s domain only'], quiz:[{q:'Your IT helpdesk emails you asking for your current password to "verify your account". What do you do?',opts:['Provide the password — IT needs it','Ignore the email','Call IT helpdesk directly to verify','Click the link and change your password'],a:2},{q:'Legitimate IT password reset links should come from:',opts:['Any email looking professional','Your company\'s official IT domain','Gmail or Outlook external addresses','Any email with IT in the subject'],a:1}]},
+  slack: { title:'Internal Platform Social Engineering', points:['OTPs are never requested over chat platforms by legitimate services','Enable 2FA on your Slack account itself','Internal Slack bots cannot legitimately ask for OTP codes','When in doubt, call the person asking — don\'t type sensitive data in chat'], quiz:[{q:'A Slack bot messages you asking for your bank OTP. What do you do?',opts:['Provide the OTP quickly','Verify with the sender via phone','Type the OTP in the chat','Ignore and continue working'],a:1},{q:'Which of these is a red flag in internal platform messages?',opts:['Normal project discussion','Requests for OTP or passwords','Team announcements','File sharing'],a:1}]},
+  hr: { title:'HR Document Phishing', points:['HR salary documents are shared through official HR portals, not random links','Be suspicious of salary revision emails that arrive "out of the blue"','Verify any unexpected HR communication by calling HR directly','Attackers use salary/bonus topics because people act without thinking'], quiz:[{q:'You get an email saying "Your salary has been revised. Click to view the new increment letter." What do you do?',opts:['Click immediately — this is exciting news','Check the sender email and verify with HR','Forward to colleagues to see if they got it too','Download the PDF attachment first'],a:1}]},
+  otp: { title:'OTP Harvesting & Account Takeover', points:['Banks NEVER ask for your OTP over phone, SMS, or website','An OTP is like a one-time key — sharing it gives full account access','If you receive an OTP you didn\'t request, change your password immediately','Always access your bank through the official app or by typing the URL directly'], quiz:[{q:'Someone calls claiming to be your bank and asks for your OTP to "verify" your account. You should:',opts:['Give the OTP — your bank needs it','Hang up and call the bank\'s official number','Ask for their employee ID first','Give half the OTP for verification'],a:1},{q:'What does sharing your OTP allow an attacker to do?',opts:['Only view your account','Fully access and transfer funds','Only update your KYC','Change your phone number only'],a:1}]},
+  kyc: { title:'KYC Phishing & Account Panic Attacks', points:['Banks send official notices through registered post or in-app notifications','"Your account will be blocked" is a panic tactic — take a breath before acting','Access your bank account through the app directly to check for real alerts','KYC updates are done in-branch or through the official app only'], quiz:[{q:'An email says your account will be blocked in 2 hours unless you update KYC. What do you do?',opts:['Click the link immediately','Log into the official banking app directly','Call the number in the email','Ignore it'],a:1}]},
+  card: { title:'Card Blocking SMS Scams', points:['Banks send official alerts through registered SMS — not clickable links','A real bank will never ask you to click a link to "unblock" your card','Call the number on the back of your card if you have any concerns','Never enter card details on any site reached through an SMS link'], quiz:[{q:'You receive an SMS saying your card is blocked with a link to reactivate. You should:',opts:['Click the link and reactivate','Call the bank using the number on your card','Reply to the SMS','Visit the bank branch immediately'],a:1}]},
+  money: { title:'Money Credited Mistake Scams', points:['Banks process reversals through official channels — they don\'t call you to reverse','If money appears in your account unexpectedly, report it to your bank in-app','Never click links or call numbers provided by someone claiming to be your bank','Scammers use this to trick you into "returning" money from your own account'], quiz:[{q:'Someone texts saying money was credited to your account by mistake and needs it back. You should:',opts:['Transfer back immediately — it\'s the right thing','Contact your bank directly through the app','Call the number they provided','Ignore it — it\'s not your problem'],a:1}]},
+  rbi: { title:'RBI Impersonation Scams', points:['RBI never contacts individuals directly about compliance violations','RBI doesn\'t have authority to freeze individual accounts directly','Any "RBI official" asking for payment is a scammer — 100% of the time','RBI\'s official communications go through banks, not direct calls'], quiz:[{q:'A caller says they are from RBI and your account shows suspicious transactions. They want you to share account details for investigation. You should:',opts:['Cooperate — RBI is legitimate','Hang up — RBI never calls individuals','Ask for their badge number first','Transfer funds to a "safe account" they provide'],a:1}]},
+  aadhaar: { title:'Aadhaar & UIDAI Impersonation Scams', points:['UIDAI sends official communications through their website and registered post','Aadhaar cannot be "blocked" by an SMS — this is always a scam','The real UIDAI helpline is 1947 — use only this number','Never share your Aadhaar OTP or biometric data over phone'], quiz:[{q:'An SMS says your Aadhaar will be blocked in 24 hours unless you call immediately. You should:',opts:['Call the number in the SMS','Visit uidai.gov.in or call 1947','Provide your Aadhaar number to unblock','Share the OTP sent to your phone'],a:1}]},
+  cbi: { title:'CBI Impersonation & Sextortion Scams', points:['CBI, ED, and police never arrest people over phone — ever','"Digital arrest" is not a real legal concept in India — it\'s a complete scam','If threatened, hang up and call the National Cyber Helpline: 1930','Scammers use fear and urgency to prevent you from thinking clearly'], quiz:[{q:'A caller says they are from CBI and you will be arrested unless you pay a fine online. You should:',opts:['Pay the fine — it\'s the CBI','Hang up and call 1930 (Cybercrime Helpline)','Cooperate with their investigation','Ask for more time to arrange payment'],a:1}]},
+  exam: { title:'Fake Exam Portal Credential Harvesting', points:['Always access your exam results through the official university website directly','Bookmark official portals — don\'t click links from WhatsApp or SMS','Check the URL carefully before entering your roll number and password','Official exam boards don\'t share result links through WhatsApp forwards'], quiz:[{q:'A WhatsApp forward says your exam results are out and shares a link. You should:',opts:['Click the link immediately','Go directly to the official university website','Share it with classmates too','Call the college to confirm'],a:1}]},
+  courier: { title:'Fake Courier Delivery Scams', points:['Legitimate couriers show tracking in their official app — not through SMS links','Never pay for "customs clearance" or "failed delivery fees" through SMS links','Contact the courier company through their official website or app only','If you ordered something, check the tracking in the retailer\'s official app'], quiz:[{q:'An SMS says your package failed delivery and you need to pay ₹35 through a link to reschedule. You should:',opts:['Pay — ₹35 is nothing to risk losing the package','Check the courier\'s official website directly','Call the number in the SMS','Ignore it'],a:1}]},
+  whatsapp: { title:'WhatsApp Ban Threat Scams', points:['WhatsApp never threatens to ban accounts through WhatsApp messages','WhatsApp\'s communications come through the app itself (in-app notifications)','Never click links in messages claiming to be from WhatsApp Support','Don\'t share verification codes — this is how accounts get taken over'], quiz:[{q:'A WhatsApp message from "WhatsApp Support" says your account will be banned unless you verify immediately. You should:',opts:['Click the verification link','Ignore it — WhatsApp doesn\'t message users this way','Share your 6-digit WhatsApp code','Forward your backup codes'],a:1}]},
+};
+
+const DEMO_USERS = [
+  { id:'u1', name:'Priya Sharma', email:'priya@corp.in', dept:'Finance', score:42, trend:-12, campaigns:5, failed:3, trained:2, domain:'corporate', avatar:'PS' },
+  { id:'u2', name:'Rahul Verma', email:'rahul@corp.in', dept:'Engineering', score:78, trend:+18, campaigns:5, failed:1, trained:4, domain:'corporate', avatar:'RV' },
+  { id:'u3', name:'Anita Singh', email:'anita@corp.in', dept:'HR', score:31, trend:-8, campaigns:4, failed:3, trained:1, domain:'corporate', avatar:'AS' },
+  { id:'u4', name:'Vikram Nair', email:'vikram@bank.in', dept:'Operations', score:65, trend:+5, campaigns:6, failed:2, trained:4, domain:'banks', avatar:'VN' },
+  { id:'u5', name:'Sneha Iyer', email:'sneha@bank.in', dept:'Customer Care', score:29, trend:-15, campaigns:6, failed:5, trained:1, domain:'banks', avatar:'SI' },
+  { id:'u6', name:'Arjun Gupta', email:'arjun@edu.in', dept:'Student', score:55, trend:+10, campaigns:3, failed:1, trained:2, domain:'general', avatar:'AG' },
+  { id:'u7', name:'Meera Patel', email:'meera@corp.in', dept:'Marketing', score:72, trend:+22, campaigns:5, failed:1, trained:4, domain:'corporate', avatar:'MP' },
+  { id:'u8', name:'Kiran Kumar', email:'kiran@bank.in', dept:'Loans', score:38, trend:-3, campaigns:4, failed:2, trained:2, domain:'banks', avatar:'KK' },
+];
+
+const DEMO_CAMPAIGNS = [
+  { id:'camp1', name:'Q1 Corporate Phishing Drill', domain:'corporate', scenario:'c1', status:'completed', sent:45, clicked:18, submitted:7, reported:12, score_delta:-8, date:'2024-03-15', progress:100 },
+  { id:'camp2', name:'Bank OTP Awareness Drive', domain:'banks', scenario:'b1', status:'active', sent:32, clicked:11, submitted:4, reported:8, score_delta:-4, date:'2024-04-01', progress:65 },
+  { id:'camp3', name:'General Public Aadhaar Test', domain:'general', scenario:'g1', status:'active', sent:28, clicked:14, submitted:6, reported:5, score_delta:-6, date:'2024-04-03', progress:40 },
+  { id:'camp4', name:'CEO Fraud Awareness', domain:'corporate', scenario:'c2', status:'scheduled', sent:0, clicked:0, submitted:0, reported:0, score_delta:0, date:'2024-04-10', progress:0 },
+  { id:'camp5', name:'WhatsApp Scam Detection', domain:'general', scenario:'g5', status:'completed', sent:60, clicked:22, submitted:9, reported:18, score_delta:-5, date:'2024-03-28', progress:100 },
+];
+
+const LIVE_EVENTS = [
+  { id:1, user:'Priya Sharma', action:'clicked', scenario:'OTP Harvesting', time:'2s ago', severity:'high' },
+  { id:2, user:'Anita Singh', action:'submitted credentials', scenario:'M365 Login', time:'45s ago', severity:'critical' },
+  { id:3, user:'Vikram Nair', action:'reported attack', scenario:'KYC Alert', time:'1m ago', severity:'low' },
+  { id:4, user:'Sneha Iyer', action:'opened email', scenario:'CEO Fraud', time:'2m ago', severity:'medium' },
+  { id:5, user:'Rahul Verma', action:'reported attack', scenario:'Card Blocked', time:'3m ago', severity:'low' },
+  { id:6, user:'Kiran Kumar', action:'clicked', scenario:'Aadhaar SMS', time:'5m ago', severity:'high' },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+function Avatar({initials, size=32, gradient='linear-gradient(135deg,#00897b,#00bfa5)'}) {
+  return <div style={{width:size,height:size,borderRadius:'50%',background:gradient,display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.35,fontWeight:700,fontFamily:'Space Mono',color:'#fff',flexShrink:0}}>{initials}</div>;
+}
+
+function RiskBadge({score}) {
+  if(score >= 70) return <span className="badge badge-green">✓ {score}</span>;
+  if(score >= 45) return <span className="badge badge-yellow">⚠ {score}</span>;
+  return <span className="badge badge-red">✕ {score}</span>;
+}
+
+function DomainBadge({domain}) {
+  const labels = {corporate:'Corporate',banks:'Banks',general:'General'};
+  return <span className={`badge badge-${domain==='corporate'?'blue':domain==='banks'?'yellow':'green'} domain-${domain}`}>{labels[domain]}</span>;
+}
+
+function StatusBadge({status}) {
+  const map = {active:{cls:'badge-green',label:'● Active'},completed:{cls:'badge-gray',label:'✓ Done'},scheduled:{cls:'badge-blue',label:'◷ Scheduled'},running:{cls:'badge-yellow',label:'▶ Running'}};
+  const s = map[status]||map.scheduled;
+  return <span className={`badge ${s.cls}`}>{s.label}</span>;
+}
+
+function ScoreRing({score}) {
+  const r = 45, cx = 60, cy = 60;
+  const circ = 2 * Math.PI * r;
+  const filled = circ * (score / 100);
+  const color = score >= 70 ? '#00e5a0' : score >= 45 ? '#ffd166' : '#ff4466';
+  return (
+    <div className="score-ring-wrap" style={{width:120,height:120}}>
+      <svg width="120" height="120" style={{transform:'rotate(-90deg)'}}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(0,130,115,0.18)" strokeWidth="8"/>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${filled} ${circ}`} strokeLinecap="round" style={{transition:'stroke-dasharray 1s ease'}}/>
+      </svg>
+      <div className="score-ring-val">
+        <div className="score-ring-num" style={{color}}>{score}</div>
+        <div className="score-ring-label">RISK SCORE</div>
+      </div>
+    </div>
+  );
+}
+
+function SparkLine({data}) {
+  const max = Math.max(...data);
+  return (
+    <div className="sparkline">
+      {data.map((v,i) => (
+        <div key={i} className="spark-bar" style={{height:`${(v/max)*100}%`}}/>
+      ))}
+    </div>
+  );
+}
+
+function BarChart({data, colors}) {
+  const max = Math.max(...data.map(d=>d.value));
+  return (
+    <div className="chart-bar-container">
+      {data.map((d,i) => (
+        <div key={i} className="chart-bar-row">
+          <div className="chart-bar-label">{d.label}</div>
+          <div className="chart-bar-track">
+            <div className="chart-bar-fill" style={{width:`${(d.value/max)*100}%`,background:colors?colors[i%colors.length]:'var(--accent)'}}/>
+          </div>
+          <div className="chart-bar-val">{d.value}%</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LiveFeed({events}) {
+  const [items, setItems] = useState(events);
+  const colors = {critical:['#ff4466','badge-red'],high:['#ffd166','badge-yellow'],medium:['#009688','badge-blue'],low:['#00e5a0','badge-green']};
+  return (
+    <div className="threat-feed">
+      {items.map(ev => {
+        const [c, cls] = colors[ev.severity]||colors.medium;
+        return (
+          <div key={ev.id} className={`threat-item ${ev.severity==='critical'?'critical':''}`}>
+            <div className="threat-icon" style={{background:`${c}18`}}>
+              <span style={{fontSize:13}}>{ev.severity==='critical'?'🚨':ev.severity==='high'?'⚠️':ev.action.includes('reported')?'✅':'👁'}</span>
+            </div>
+            <div className="threat-content">
+              <div className="threat-title">{ev.user} — {ev.action}</div>
+              <div className="threat-meta">{ev.scenario} · {ev.time}</div>
+            </div>
+            <span className={`badge ${cls}`} style={{flexShrink:0}}>{ev.severity}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHISHING SIMULATION PAGES
+// ═══════════════════════════════════════════════════════════════
+
+function SimPage({scenario, onCatch, onReport}) {
+  const [step, setStep] = useState('view'); // view | otp | caught
+  const [caught, setCaught] = useState(null);
+
+  const handleSubmit = (type) => {
+    setCaught(type);
+    setStep('caught');
+    onCatch && onCatch(type);
+  };
+
+  if(step === 'caught') {
+    return (
+      <div className="caught-overlay">
+        <div className="caught-box fadeIn">
+          <div className="caught-icon">🎣</div>
+          <div className="caught-title">You got phished!</div>
+          <div className="caught-desc">
+            {caught==='submitted' ? 'You submitted your credentials on a fake page. In a real attack, your account would now be compromised.' : 'You clicked on a phishing link. Even just clicking can install malware.'}
+          </div>
+          <div style={{background:'rgba(255,68,102,0.08)',border:'1px solid rgba(255,68,102,0.2)',borderRadius:8,padding:'12px 16px',marginBottom:20,textAlign:'left'}}>
+            <div style={{fontSize:12,color:'var(--text3)',fontFamily:'Space Mono',marginBottom:4}}>ATTACK VECTOR</div>
+            <div style={{fontSize:13,color:'var(--text)'}}>{scenario.desc}</div>
+          </div>
+          <button className="btn btn-primary btn-full btn-lg" onClick={()=>window.dispatchEvent(new CustomEvent('startTraining',{detail:scenario}))}>
+            📚 Start 3-Min Training Module
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const templates = {
+    m365: (
+      <div style={{background:'#f3f2f1',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'Segoe UI,sans-serif'}}>
+        <div style={{background:'#fff',borderRadius:4,padding:32,width:'100%',maxWidth:400,boxShadow:'0 2px 16px rgba(0,0,0,0.1)'}}>
+          <div style={{textAlign:'center',marginBottom:24}}>
+            <div style={{fontSize:32,marginBottom:8}}>🪟</div>
+            <div style={{fontSize:20,fontWeight:600,color:'#333',marginBottom:4}}>Sign in to your account</div>
+            <div style={{fontSize:13,color:'#666'}}>Microsoft 365</div>
+          </div>
+          <input className="sim-input" placeholder="Email, phone, or Skype" style={{fontFamily:'Segoe UI,sans-serif'}}/>
+          <button className="sim-btn" style={{background:'#0067b8',fontFamily:'Segoe UI,sans-serif'}} onClick={()=>handleSubmit('clicked')}>Next</button>
+          <div style={{textAlign:'center',marginTop:12}}><a className="sim-link" style={{color:'#0067b8',fontFamily:'Segoe UI,sans-serif'}} onClick={()=>handleSubmit('clicked')}>No account? Create one!</a></div>
+        </div>
+      </div>
+    ),
+    otp: (
+      <div style={{background:'#fff',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'Arial,sans-serif'}}>
+        <div style={{width:'100%',maxWidth:380}}>
+          <div style={{textAlign:'center',marginBottom:20}}>
+            <div style={{fontSize:28,color:'#1a75bb',fontWeight:700,marginBottom:4}}>🏦 SecureBank</div>
+            <div style={{fontSize:13,color:'#c00',background:'#fff0f0',border:'1px solid #fcc',padding:'10px 14px',borderRadius:6,marginBottom:16}}>⚠️ Suspicious activity detected on your account. Verify now to prevent suspension.</div>
+          </div>
+          <div style={{background:'#fff',border:'1px solid #ddd',borderRadius:8,padding:24}}>
+            <div style={{fontSize:16,fontWeight:600,color:'#333',marginBottom:16}}>Verify Your Account</div>
+            <div style={{fontSize:13,color:'#666',marginBottom:12}}>Enter the OTP sent to your registered mobile</div>
+            <div style={{display:'flex',gap:8,marginBottom:16}}>
+              {[1,2,3,4,5,6].map(i=><input key={i} style={{width:40,height:44,textAlign:'center',border:'1px solid #ddd',borderRadius:4,fontSize:20,fontFamily:'Arial'}} maxLength={1}/>)}
+            </div>
+            <button onClick={()=>handleSubmit('submitted')} style={{width:'100%',padding:11,background:'#1a75bb',color:'#fff',border:'none',borderRadius:6,fontSize:14,fontWeight:600,cursor:'pointer'}}>Verify OTP</button>
+            <div style={{textAlign:'center',marginTop:10,fontSize:12,color:'#1a75bb',cursor:'pointer'}}>Resend OTP</div>
+          </div>
+        </div>
+      </div>
+    ),
+    aadhaar: (
+      <div style={{background:'#004b87',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'Arial,sans-serif'}}>
+        <div style={{background:'#fff',borderRadius:8,padding:28,width:'100%',maxWidth:400}}>
+          <div style={{textAlign:'center',marginBottom:20}}>
+            <div style={{fontSize:14,color:'#004b87',fontWeight:700,marginBottom:4}}>UNIQUE IDENTIFICATION AUTHORITY OF INDIA</div>
+            <div style={{fontSize:12,color:'#666',marginBottom:16}}>Ministry of Electronics & IT, Government of India</div>
+            <div style={{background:'#fff3cd',border:'1px solid #ffc107',padding:'12px 14px',borderRadius:6,fontSize:13,color:'#856404',marginBottom:16}}>
+              🔔 Your Aadhaar has been flagged for KYC update. Failure to update within 24 hours will result in deactivation.
+            </div>
+          </div>
+          <input className="sim-input" style={{fontFamily:'Arial'}} placeholder="Aadhaar Number (12 digits)"/>
+          <input className="sim-input" style={{fontFamily:'Arial'}} placeholder="Registered Mobile Number"/>
+          <button onClick={()=>handleSubmit('submitted')} style={{width:'100%',padding:11,background:'#004b87',color:'#fff',border:'none',borderRadius:6,fontSize:14,fontWeight:600,cursor:'pointer',marginTop:4}}>Send OTP & Verify</button>
+          <div style={{textAlign:'center',marginTop:12,fontSize:11,color:'#999'}}>By continuing you agree to UIDAI Terms of Service</div>
+        </div>
+      </div>
+    ),
+    kyc: (
+      <div style={{background:'#f8f9fa',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'Arial,sans-serif'}}>
+        <div style={{width:'100%',maxWidth:420}}>
+          <div style={{background:'#c00',color:'#fff',padding:'12px 16px',borderRadius:'8px 8px 0 0',fontSize:13,fontWeight:600}}>
+            ⚠️ URGENT: Your account has been temporarily suspended
+          </div>
+          <div style={{background:'#fff',border:'1px solid #ddd',borderTopWidth:0,borderRadius:'0 0 8px 8px',padding:24}}>
+            <div style={{fontSize:15,fontWeight:600,color:'#333',marginBottom:8}}>Complete KYC to restore access</div>
+            <div style={{fontSize:13,color:'#666',marginBottom:16}}>As per RBI guidelines, your account requires immediate KYC verification. Your account will remain suspended until this is complete.</div>
+            <input className="sim-input" style={{fontFamily:'Arial'}} placeholder="Account Number"/>
+            <input className="sim-input" style={{fontFamily:'Arial',marginTop:8}} placeholder="Date of Birth (DD/MM/YYYY)"/>
+            <input className="sim-input" style={{fontFamily:'Arial',marginTop:8}} placeholder="Registered Mobile OTP"/>
+            <button onClick={()=>handleSubmit('submitted')} style={{width:'100%',padding:11,background:'#c00',color:'#fff',border:'none',borderRadius:6,fontSize:14,fontWeight:600,cursor:'pointer',marginTop:12}}>Verify & Restore Account</button>
+          </div>
+        </div>
+      </div>
+    ),
+    exam: (
+      <div style={{background:'#f0f4f8',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'Arial,sans-serif'}}>
+        <div style={{background:'#fff',borderRadius:8,padding:28,width:'100%',maxWidth:400,boxShadow:'0 2px 12px rgba(0,0,0,0.08)'}}>
+          <div style={{textAlign:'center',marginBottom:20}}>
+            <div style={{fontSize:24,marginBottom:4}}>🎓</div>
+            <div style={{fontSize:16,fontWeight:700,color:'#1a237e',marginBottom:2}}>University Results Portal</div>
+            <div style={{fontSize:12,color:'#666'}}>Semester Examination Results 2024</div>
+          </div>
+          <div style={{background:'#e8f5e9',border:'1px solid #a5d6a7',padding:10,borderRadius:6,fontSize:13,color:'#2e7d32',marginBottom:16}}>
+            🎉 Results Declared! Enter your details to view your scorecard.
+          </div>
+          <input className="sim-input" style={{fontFamily:'Arial'}} placeholder="Roll Number"/>
+          <input className="sim-input" style={{fontFamily:'Arial',marginTop:8}} placeholder="Date of Birth (DD/MM/YYYY)"/>
+          <input className="sim-input" style={{fontFamily:'Arial',marginTop:8}} type="password" placeholder="Portal Password"/>
+          <button onClick={()=>handleSubmit('submitted')} style={{width:'100%',padding:11,background:'#1a237e',color:'#fff',border:'none',borderRadius:6,fontSize:14,fontWeight:600,cursor:'pointer',marginTop:12}}>View My Result</button>
+        </div>
+      </div>
+    ),
+    default: (
+      <div style={{background:'#f5f5f5',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:'Arial,sans-serif'}}>
+        <div style={{background:'#fff',borderRadius:8,padding:28,width:'100%',maxWidth:400,boxShadow:'0 2px 12px rgba(0,0,0,0.08)'}}>
+          <div style={{textAlign:'center',marginBottom:20}}>
+            <div style={{fontSize:32,marginBottom:8}}>{scenario.icon}</div>
+            <div style={{fontSize:18,fontWeight:700,color:'#333',marginBottom:4}}>{scenario.name}</div>
+            <div style={{fontSize:13,color:'#888',marginBottom:16,background:'#fff3cd',border:'1px solid #ffc107',padding:'8px 12px',borderRadius:6}}>
+              ⚠️ Urgent action required
+            </div>
+          </div>
+          <input className="sim-input" style={{fontFamily:'Arial'}} placeholder="Enter your credentials"/>
+          <input className="sim-input" style={{fontFamily:'Arial',marginTop:8}} type="password" placeholder="Password / OTP"/>
+          <button onClick={()=>handleSubmit('submitted')} style={{width:'100%',padding:11,background:'#0078d4',color:'#fff',border:'none',borderRadius:6,fontSize:14,fontWeight:600,cursor:'pointer',marginTop:12}}>Verify Now</button>
+          <div style={{textAlign:'center',marginTop:10}}>
+            <span onClick={onReport} style={{fontSize:12,color:'#999',cursor:'pointer'}}>This looks suspicious — Report it</span>
+          </div>
+        </div>
+      </div>
+    ),
+  };
+
+  return (
+    <div>
+      {/* Report banner */}
+      <div style={{position:'fixed',top:0,left:0,right:0,background:'rgba(0,0,0,0.85)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 16px',backdropFilter:'blur(4px)'}}>
+        <span style={{fontSize:11,color:'rgba(255,255,255,0.5)',fontFamily:'Space Mono'}}>SIMULATION MODE · {scenario.name}</span>
+        <button onClick={onReport} style={{padding:'5px 12px',background:'rgba(0,229,160,0.15)',border:'1px solid rgba(0,229,160,0.3)',color:'#00e5a0',borderRadius:6,fontSize:12,cursor:'pointer',fontFamily:'DM Sans'}}>
+          ✓ Report as Phishing
+        </button>
+      </div>
+      <div style={{paddingTop:36}}>
+        {templates[scenario.template] || templates.default}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRAINING MODULE
+// ═══════════════════════════════════════════════════════════════
+
+function TrainingModule({scenario, onComplete}) {
+  const [step, setStep] = useState(0); // 0=lesson, 1=quiz
+  const [qIdx, setQIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+  const mod = TRAINING_MODULES[scenario.template] || TRAINING_MODULES.m365;
+
+  const handleAnswer = (idx) => {
+    if(answered) return;
+    setSelected(idx);
+    setAnswered(true);
+    if(idx === mod.quiz[qIdx].a) setScore(s=>s+1);
+  };
+
+  const nextQ = () => {
+    if(qIdx < mod.quiz.length-1) { setQIdx(q=>q+1); setSelected(null); setAnswered(false); }
+    else setDone(true);
+  };
+
+  if(done) return (
+    <div className="training-module fadeIn">
+      <div className="training-header" style={{textAlign:'center',padding:32}}>
+        <div style={{fontSize:48,marginBottom:12}}>{score===mod.quiz.length?'🏆':'✅'}</div>
+        <div style={{fontFamily:'var(--font-display)',fontSize:22,fontWeight:800,color:'var(--text)',marginBottom:6}}>
+          {score===mod.quiz.length?'Perfect Score!':'Training Complete'}
+        </div>
+        <div style={{color:'var(--text2)',marginBottom:8}}>You scored {score}/{mod.quiz.length} on the quiz</div>
+        <div style={{display:'flex',gap:8,justifyContent:'center',flexWrap:'wrap',marginBottom:20}}>
+          <span className="badge badge-green">+15 pts earned</span>
+          {score===mod.quiz.length && <span className="badge badge-purple">🏅 Perfect Score Badge</span>}
+        </div>
+        <button className="btn btn-primary" onClick={onComplete}>Return to Dashboard</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="training-module fadeIn">
+      <div className="training-header">
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+          <span className="badge badge-red">SECURITY TRAINING</span>
+          <span className="badge badge-gray">{step===0?'📖 Lesson':'🧠 Quiz'}</span>
+        </div>
+        <div style={{fontFamily:'var(--font-display)',fontSize:18,fontWeight:700,color:'var(--text)'}}>{mod.title}</div>
+      </div>
+      <div className="training-body">
+        {step === 0 ? (
+          <>
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:10,color:'var(--text3)',marginBottom:12,textTransform:'uppercase',letterSpacing:'0.1em'}}>KEY LEARNINGS</div>
+              {mod.points.map((p,i) => (
+                <div key={i} style={{display:'flex',gap:10,padding:'10px 0',borderBottom:'1px solid var(--border)',alignItems:'flex-start'}}>
+                  <span style={{color:'var(--accent)',fontFamily:'var(--font-mono)',fontSize:12,flexShrink:0,marginTop:1}}>0{i+1}</span>
+                  <span style={{color:'var(--text2)',fontSize:13,lineHeight:1.6}}>{p}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{background:'rgba(255,68,102,0.06)',border:'1px solid rgba(255,68,102,0.15)',borderRadius:'var(--r2)',padding:'12px 16px',marginBottom:20}}>
+              <div style={{fontSize:11,color:'var(--red)',fontFamily:'var(--font-mono)',marginBottom:4}}>WHAT HAPPENED</div>
+              <div style={{fontSize:13,color:'var(--text2)'}}>{scenario.desc}</div>
+            </div>
+            <button className="btn btn-primary btn-full" onClick={()=>setStep(1)}>Take the Quiz →</button>
+          </>
+        ) : (
+          <>
+            <div style={{marginBottom:16}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:10,color:'var(--text3)',marginBottom:8}}>QUESTION {qIdx+1} OF {mod.quiz.length}</div>
+              <div style={{fontSize:15,fontWeight:500,color:'var(--text)',marginBottom:16,lineHeight:1.5}}>{mod.quiz[qIdx].q}</div>
+              {mod.quiz[qIdx].opts.map((opt,i) => (
+                <div key={i} className={`quiz-option ${selected===i?(i===mod.quiz[qIdx].a?'correct':'wrong'):(answered&&i===mod.quiz[qIdx].a?'correct':'')}`}
+                  onClick={()=>handleAnswer(i)} style={{fontSize:13}}>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:11,marginRight:8,opacity:0.5}}>{String.fromCharCode(65+i)}.</span>
+                  {opt}
+                </div>
+              ))}
+            </div>
+            {answered && (
+              <div className="fadeIn">
+                <div style={{padding:'10px 14px',background:selected===mod.quiz[qIdx].a?'rgba(0,229,160,0.08)':'rgba(255,68,102,0.08)',border:`1px solid ${selected===mod.quiz[qIdx].a?'rgba(0,229,160,0.2)':'rgba(255,68,102,0.2)'}`,borderRadius:'var(--r2)',marginBottom:12,fontSize:13,color:'var(--text2)'}}>
+                  {selected===mod.quiz[qIdx].a?'✓ Correct!':'✕ Incorrect. The right answer has been highlighted.'}
+                </div>
+                <button className="btn btn-primary btn-full" onClick={nextQ}>{qIdx<mod.quiz.length-1?'Next Question →':'See Results'}</button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CAMPAIGN WIZARD
+// ═══════════════════════════════════════════════════════════════
+
+function CampaignWizard({onClose, onCreate}) {
+  const [step, setStep] = useState(0);
+  const [domain, setDomain] = useState(null);
+  const [scenario, setScenario] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [config, setConfig] = useState({name:'',channel:'Email',schedule:'now',difficulty:'medium'});
+
+  const domainScenarios = domain ? SCENARIOS[domain] : [];
+  const availUsers = DEMO_USERS.filter(u=>!domain||u.domain===domain);
+  const steps = ['Domain','Scenario','Users','Configure','Launch'];
+
+  const toggleUser = (id) => setUsers(u=>u.includes(id)?u.filter(x=>x!==id):[...u,id]);
+
+  const handleLaunch = () => {
+    const camp = {id:'camp'+Date.now(), name:config.name||`${domain} - ${scenario?.name}`, domain, scenario:scenario?.id, status:'active', sent:0, clicked:0, submitted:0, reported:0, score_delta:0, date:new Date().toISOString().slice(0,10), progress:0};
+    onCreate(camp);
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal" style={{maxWidth:640}}>
+        <div className="modal-header">
+          <div className="modal-title">Create Campaign</div>
+          <div className="modal-close" onClick={onClose}>✕</div>
+        </div>
+        <div className="modal-body">
+          <div className="wizard-steps">
+            {steps.map((s,i)=>(
+              <div key={i} className={`wizard-step ${i<step?'done':i===step?'active':''}`}>
+                <div className="step-circle">{i<step?'✓':i+1}</div>
+                <div className="step-label">{s}</div>
+              </div>
+            ))}
+          </div>
+
+          {step===0 && (
+            <div className="fadeIn">
+              <div style={{fontFamily:'var(--font-display)',fontSize:16,fontWeight:600,marginBottom:16}}>Select Target Domain</div>
+              <div className="grid-3" style={{gap:12}}>
+                {[['corporate','🏢','Corporate','M365, CEO fraud, IT reset, Slack OTP, HR docs'],['banks','🏦','Banks','OTP harvest, KYC, card alerts, RBI calls'],['general','👥','General Public','Aadhaar, CBI, exam portals, courier, WhatsApp']].map(([d,icon,label,desc])=>(
+                  <div key={d} className={`scenario-card ${domain===d?'selected':''}`} style={{'--domain-color':d==='corporate'?'var(--corporate)':d==='banks'?'var(--banks)':'var(--general)'}} onClick={()=>setDomain(d)}>
+                    <div style={{fontSize:28,marginBottom:8}}>{icon}</div>
+                    <div style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:14,marginBottom:4}}>{label}</div>
+                    <div style={{fontSize:11,color:'var(--text3)'}}>{desc}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:20,display:'flex',justifyContent:'flex-end'}}>
+                <button className="btn btn-primary" onClick={()=>setStep(1)} disabled={!domain}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {step===1 && (
+            <div className="fadeIn">
+              <div style={{fontFamily:'var(--font-display)',fontSize:16,fontWeight:600,marginBottom:16}}>Choose Attack Scenario</div>
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {domainScenarios.map(s=>(
+                  <div key={s.id} className={`scenario-card ${scenario?.id===s.id?'selected':''}`} style={{'--domain-color':domain==='corporate'?'var(--corporate)':domain==='banks'?'var(--banks)':'var(--general)',display:'flex',gap:14,alignItems:'center'}} onClick={()=>setScenario(s)}>
+                    <span style={{fontSize:24}}>{s.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:'var(--font-display)',fontWeight:600,fontSize:13,marginBottom:2}}>{s.name}</div>
+                      <div style={{fontSize:11,color:'var(--text3)'}}>{s.desc}</div>
+                    </div>
+                    <span className={`badge ${s.risk==='CRITICAL'?'badge-red':'badge-yellow'}`}>{s.risk}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:20,display:'flex',justifyContent:'space-between'}}>
+                <button className="btn btn-secondary" onClick={()=>setStep(0)}>← Back</button>
+                <button className="btn btn-primary" onClick={()=>setStep(2)} disabled={!scenario}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {step===2 && (
+            <div className="fadeIn">
+              <div style={{fontFamily:'var(--font-display)',fontSize:16,fontWeight:600,marginBottom:4}}>Select Target Users</div>
+              <div style={{fontSize:12,color:'var(--text3)',marginBottom:16}}>{users.length} users selected</div>
+              <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:300,overflowY:'auto'}}>
+                {availUsers.map(u=>(
+                  <div key={u.id} className="campaign-row" onClick={()=>toggleUser(u.id)} style={{borderColor:users.includes(u.id)?'var(--accent)':'var(--border)',background:users.includes(u.id)?'rgba(0,212,255,0.05)':undefined}}>
+                    <Avatar initials={u.avatar} size={32}/>
+                    <div className="campaign-info">
+                      <div className="campaign-name">{u.name}</div>
+                      <div className="campaign-meta">{u.dept} · <RiskBadge score={u.score}/></div>
+                    </div>
+                    <div style={{width:20,height:20,borderRadius:4,border:`1px solid ${users.includes(u.id)?'var(--accent)':'var(--border)'}`,background:users.includes(u.id)?'var(--accent)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,color:'var(--bg)'}}>
+                      {users.includes(u.id)?'✓':''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:16,display:'flex',justifyContent:'space-between'}}>
+                <button className="btn btn-secondary" onClick={()=>setStep(1)}>← Back</button>
+                <button className="btn btn-primary" onClick={()=>setStep(3)} disabled={users.length===0}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {step===3 && (
+            <div className="fadeIn">
+              <div style={{fontFamily:'var(--font-display)',fontSize:16,fontWeight:600,marginBottom:16}}>Configure Campaign</div>
+              <div className="form-group">
+                <label className="form-label">Campaign Name</label>
+                <input className="form-input" value={config.name} onChange={e=>setConfig(c=>({...c,name:e.target.value}))} placeholder={`${domain} - ${scenario?.name}`}/>
+              </div>
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">Delivery Channel</label>
+                  <select className="form-input form-select" value={config.channel} onChange={e=>setConfig(c=>({...c,channel:e.target.value}))}>
+                    <option>Email</option><option>SMS</option><option>WhatsApp</option><option>Call</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Schedule</label>
+                  <select className="form-input form-select" value={config.schedule} onChange={e=>setConfig(c=>({...c,schedule:e.target.value}))}>
+                    <option value="now">Launch Now</option><option value="1h">In 1 Hour</option><option value="24h">Tomorrow</option><option value="custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Difficulty Level</label>
+                <div style={{display:'flex',gap:8}}>
+                  {['easy','medium','hard','expert'].map(d=>(
+                    <div key={d} className={`scenario-card ${config.difficulty===d?'selected':''}`} style={{flex:1,padding:'8px 10px',textAlign:'center',cursor:'pointer','--domain-color':'var(--accent)'}} onClick={()=>setConfig(c=>({...c,difficulty:d}))}>
+                      <div style={{fontSize:11,fontWeight:600,textTransform:'capitalize'}}>{d}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{background:'rgba(0,212,255,0.06)',border:'1px solid rgba(0,212,255,0.15)',borderRadius:'var(--r2)',padding:'12px 16px',marginTop:8}}>
+                <div style={{fontSize:11,color:'var(--text3)',fontFamily:'var(--font-mono)',marginBottom:6}}>CAMPAIGN SUMMARY</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,fontSize:12,color:'var(--text2)'}}>
+                  <div>Domain: <strong style={{color:'var(--text)'}}>{domain}</strong></div>
+                  <div>Scenario: <strong style={{color:'var(--text)'}}>{scenario?.name}</strong></div>
+                  <div>Users: <strong style={{color:'var(--text)'}}>{users.length} selected</strong></div>
+                  <div>Channel: <strong style={{color:'var(--text)'}}>{config.channel}</strong></div>
+                </div>
+              </div>
+              <div style={{marginTop:20,display:'flex',justifyContent:'space-between'}}>
+                <button className="btn btn-secondary" onClick={()=>setStep(2)}>← Back</button>
+                <button className="btn btn-primary" onClick={()=>setStep(4)}>Preview →</button>
+              </div>
+            </div>
+          )}
+
+          {step===4 && (
+            <div className="fadeIn">
+              <div style={{textAlign:'center',padding:'20px 0'}}>
+                <div style={{fontSize:48,marginBottom:12}}>🚀</div>
+                <div style={{fontFamily:'var(--font-display)',fontSize:20,fontWeight:800,marginBottom:8}}>Ready to Launch</div>
+                <div style={{color:'var(--text2)',marginBottom:24}}>{users.length} users will receive a simulated <strong>{scenario?.name}</strong> attack via {config.channel}</div>
+                <div className="banner banner-info" style={{textAlign:'left'}}>
+                  ℹ️ Users will be redirected to training if they fail. Risk scores will update automatically.
+                </div>
+                <div style={{display:'flex',gap:12,justifyContent:'center',marginTop:20}}>
+                  <button className="btn btn-secondary" onClick={()=>setStep(3)}>← Back</button>
+                  <button className="btn btn-primary btn-lg" onClick={handleLaunch}>🚀 Launch Campaign</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGES
+// ═══════════════════════════════════════════════════════════════
+
+function AdminDashboard({onNavigate}) {
+  const [showWizard, setShowWizard] = useState(false);
+  const [campaigns, setCampaigns] = useState(DEMO_CAMPAIGNS);
+  const [liveEvents] = useState(LIVE_EVENTS);
+
+  const totalSent = campaigns.reduce((a,c)=>a+c.sent,0);
+  const totalClicked = campaigns.reduce((a,c)=>a+c.clicked,0);
+  const totalSubmitted = campaigns.reduce((a,c)=>a+c.submitted,0);
+  const totalReported = campaigns.reduce((a,c)=>a+c.reported,0);
+  const orgRisk = Math.round(DEMO_USERS.reduce((a,u)=>a+u.score,0)/DEMO_USERS.length);
+
+  return (
+    <div className="page-content fadeIn">
+      {showWizard && <CampaignWizard onClose={()=>setShowWizard(false)} onCreate={c=>setCampaigns(cs=>[c,...cs])}/>}
+      <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+        <div>
+          <div className="page-title">Command Center</div>
+          <div className="page-sub">Organisation-wide phishing simulation & awareness</div>
+        </div>
+        <button className="btn btn-primary btn-lg" onClick={()=>setShowWizard(true)}>+ New Campaign</button>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card" style={{'--accent-color':'var(--accent)'}}>
+          <div className="stat-label">Org Risk Score</div>
+          <div className="stat-value" style={{color:orgRisk>=70?'var(--green)':orgRisk>=45?'var(--yellow)':'var(--red)'}}>{orgRisk}</div>
+          <div className="stat-change down">↓ 8 pts this month</div>
+          <div className="stat-icon">🎯</div>
+        </div>
+        <div className="stat-card" style={{'--accent-color':'var(--yellow)'}}>
+          <div className="stat-label">Emails Sent</div>
+          <div className="stat-value">{totalSent}</div>
+          <div className="stat-change">Across {campaigns.length} campaigns</div>
+          <div className="stat-icon">📧</div>
+        </div>
+        <div className="stat-card" style={{'--accent-color':'var(--red)'}}>
+          <div className="stat-label">Click Rate</div>
+          <div className="stat-value">{totalSent?Math.round(totalClicked/totalSent*100):0}%</div>
+          <div className="stat-change down">↑ 3% from last month</div>
+          <div className="stat-icon">🖱️</div>
+        </div>
+        <div className="stat-card" style={{'--accent-color':'var(--green)'}}>
+          <div className="stat-label">Reported Rate</div>
+          <div className="stat-value" style={{color:'var(--green)'}}>{totalSent?Math.round(totalReported/totalSent*100):0}%</div>
+          <div className="stat-change up">↑ 12% from last month</div>
+          <div className="stat-icon">✅</div>
+        </div>
+      </div>
+
+      <div className="grid-21" style={{marginBottom:16}}>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Active Campaigns</div>
+            <span className="card-action" onClick={()=>onNavigate('campaigns')}>View all →</span>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {campaigns.filter(c=>c.status!=='scheduled').slice(0,4).map(c=>(
+              <div key={c.id} className="campaign-row">
+                <DomainBadge domain={c.domain}/>
+                <div className="campaign-info">
+                  <div className="campaign-name">{c.name}</div>
+                  <div className="campaign-meta">{c.sent} sent · {c.clicked} clicked · {c.reported} reported</div>
+                </div>
+                <div className="campaign-progress">
+                  <div className="progress-bar">
+                    <div className="progress-fill" style={{width:`${c.progress}%`,background:c.status==='active'?'var(--accent)':'var(--green)'}}/>
+                  </div>
+                  <div style={{fontSize:10,color:'var(--text3)',fontFamily:'var(--font-mono)',textAlign:'right',marginTop:2}}>{c.progress}%</div>
+                </div>
+                <StatusBadge status={c.status}/>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header">
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <div className="live-dot"/>
+              <div className="card-title">Live Events</div>
+            </div>
+          </div>
+          <LiveFeed events={liveEvents.slice(0,4)}/>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Click Rate by Scenario</div>
+          </div>
+          <BarChart data={[
+            {label:'CEO Payment Request',value:68},
+            {label:'Aadhaar KYC Block',value:62},
+            {label:'OTP Harvesting',value:58},
+            {label:'M365 Login',value:52},
+            {label:'HR Salary PDF',value:48},
+            {label:'Card Blocked',value:44},
+          ]} colors={['#ff4466','#ff4466','#ff8c42','#ffd166','#ffd166','#009688']}/>
+        </div>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Domain Performance</div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            {[{d:'corporate',label:'Corporate',click:52,report:28,col:'var(--corporate)'},
+              {d:'banks',label:'Banks',click:58,report:22,col:'var(--banks)'},
+              {d:'general',label:'General Public',click:61,report:19,col:'var(--general)'}].map(({d,label,click,report,col})=>(
+              <div key={d}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                  <span style={{fontSize:13,color:'var(--text2)'}}>{label}</span>
+                  <span style={{fontSize:11,fontFamily:'var(--font-mono)',color:'var(--text3)'}}>Click: {click}% · Reported: {report}%</span>
+                </div>
+                <div style={{display:'flex',gap:4,height:8}}>
+                  <div style={{width:`${click}%`,background:col,borderRadius:'2px 0 0 2px',opacity:0.8}}/>
+                  <div style={{width:`${report}%`,background:'var(--green)',borderRadius:'0 2px 2px 0',opacity:0.8}}/>
+                  <div style={{flex:1,background:'rgba(230,220,248,0.85)',borderRadius:'0 2px 2px 0'}}/>
+                </div>
+              </div>
+            ))}
+            <div style={{display:'flex',gap:12,fontSize:11,color:'var(--text3)'}}>
+              <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:10,height:10,background:'var(--corporate)',borderRadius:2,display:'inline-block'}}/> Click rate</span>
+              <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:10,height:10,background:'var(--green)',borderRadius:2,display:'inline-block'}}/> Report rate</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrainerDashboard({onNavigate}) {
+  const [filter, setFilter] = useState('all');
+  const users = filter==='all' ? DEMO_USERS : DEMO_USERS.filter(u=>u.domain===filter);
+
+  const high = DEMO_USERS.filter(u=>u.score<40);
+  const improved = DEMO_USERS.filter(u=>u.trend>0);
+
+  const heatData = DEMO_USERS.flatMap(u => 
+    Array(7).fill(0).map((_,i) => ({user:u.name, day:i, val:Math.max(0,Math.min(100,u.score + (Math.random()*20-10)))}))
+  );
+
+  return (
+    <div className="page-content fadeIn">
+      <div className="page-header">
+        <div className="page-title">Team Intelligence</div>
+        <div className="page-sub">Monitor, identify risk, and trigger targeted training</div>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card" style={{'--accent-color':'var(--red)'}}>
+          <div className="stat-label">High Risk Users</div>
+          <div className="stat-value" style={{color:'var(--red)'}}>{high.length}</div>
+          <div className="stat-change">Score below 40</div>
+          <div className="stat-icon">🚨</div>
+        </div>
+        <div className="stat-card" style={{'--accent-color':'var(--green)'}}>
+          <div className="stat-label">Improving</div>
+          <div className="stat-value" style={{color:'var(--green)'}}>{improved.length}</div>
+          <div className="stat-change">Score trending up</div>
+          <div className="stat-icon">📈</div>
+        </div>
+        <div className="stat-card" style={{'--accent-color':'var(--yellow)'}}>
+          <div className="stat-label">Training Pending</div>
+          <div className="stat-value" style={{color:'var(--yellow)'}}>3</div>
+          <div className="stat-change">Not completed</div>
+          <div className="stat-icon">📚</div>
+        </div>
+        <div className="stat-card" style={{'--accent-color':'var(--accent)'}}>
+          <div className="stat-label">Avg Score</div>
+          <div className="stat-value">{Math.round(DEMO_USERS.reduce((a,u)=>a+u.score,0)/DEMO_USERS.length)}</div>
+          <div className="stat-change">Team average</div>
+          <div className="stat-icon">💯</div>
+        </div>
+      </div>
+
+      {high.length > 0 && (
+        <div className="banner banner-danger" style={{marginBottom:16}}>
+          🚨 {high.length} users need immediate attention — score below 40. Consider mandatory training.
+        </div>
+      )}
+
+      <div className="grid-21" style={{marginBottom:16}}>
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Team Risk Heatmap</div>
+            <div style={{display:'flex',gap:8}}>
+              <span style={{fontSize:10,color:'var(--text3)',fontFamily:'var(--font-mono)'}}>Mon → Sun</span>
+            </div>
+          </div>
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%'}}>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Dept</th>
+                  <th>Risk</th>
+                  <th>Trend</th>
+                  <th>Last 7 days</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u=>{
+                  const spark = Array(7).fill(0).map(()=>Math.max(10,Math.min(100,u.score+(Math.random()*20-10))));
+                  return (
+                    <tr key={u.id}>
+                      <td>
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <Avatar initials={u.avatar} size={28}/>
+                          <div>
+                            <div style={{color:'var(--text)',fontWeight:500,fontSize:13}}>{u.name}</div>
+                            <div style={{fontSize:10,color:'var(--text3)',fontFamily:'var(--font-mono)'}}>{u.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className="badge badge-gray">{u.dept}</span></td>
+                      <td><RiskBadge score={u.score}/></td>
+                      <td><span style={{color:u.trend>0?'var(--green)':'var(--red)',fontSize:12,fontFamily:'var(--font-mono)'}}>{u.trend>0?'+':''}{u.trend}</span></td>
+                      <td><SparkLine data={spark}/></td>
+                      <td>
+                        {u.score < 40 ? <span className="badge badge-red">At Risk</span> :
+                         u.trend > 10 ? <span className="badge badge-green">Improving</span> :
+                         <span className="badge badge-gray">Stable</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header"><div className="card-title">Needs Attention</div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {high.map(u=>(
+              <div key={u.id} style={{padding:'10px 12px',background:'rgba(255,68,102,0.06)',border:'1px solid rgba(255,68,102,0.15)',borderRadius:'var(--r2)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  <Avatar initials={u.avatar} size={28}/>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{u.name}</div>
+                    <div style={{fontSize:10,color:'var(--text3)',fontFamily:'var(--font-mono)'}}>{u.dept}</div>
+                  </div>
+                  <RiskBadge score={u.score}/>
+                </div>
+                <div style={{fontSize:11,color:'var(--text3)',marginBottom:8}}>Failed {u.failed} of {u.campaigns} campaigns · {u.trained} trainings done</div>
+                <button className="btn btn-danger btn-sm btn-full">Assign Training</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserDashboard({user, onNavigate, onSimulate}) {
+  const [activeTraining, setActiveTraining] = useState(null);
+  const badges = ['🎯 First Sim Completed', '📚 3 Trainings Done', user.score > 60 ? '🏆 High Awareness' : null].filter(Boolean);
+  const recentActivity = [
+    {text:'<strong>Clicked</strong> a phishing link in "M365 Login" simulation', time:'2 days ago', dot:'red'},
+    {text:'Completed training: <strong>How Microsoft 365 Phishing Works</strong>', time:'2 days ago', dot:'green'},
+    {text:'<strong>Reported</strong> phishing attempt in "KYC Update" campaign', time:'5 days ago', dot:'green'},
+    {text:'Received campaign: <strong>CEO Payment Fraud Simulation</strong>', time:'1 week ago', dot:'yellow'},
+  ];
+
+  useEffect(() => {
+    const handler = (e) => setActiveTraining(e.detail);
+    window.addEventListener('startTraining', handler);
+    return () => window.removeEventListener('startTraining', handler);
+  }, []);
+
+  if(activeTraining) {
+    return (
+      <div className="page-content fadeIn">
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
+          <button className="btn btn-secondary btn-sm" onClick={()=>setActiveTraining(null)}>← Back</button>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:18}}>Security Training</div>
+        </div>
+        <TrainingModule scenario={activeTraining} onComplete={()=>setActiveTraining(null)}/>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-content fadeIn">
+      <div className="page-header">
+        <div className="page-title">My Security Profile</div>
+        <div className="page-sub">Track your awareness score and training progress</div>
+      </div>
+
+      <div className="grid-12" style={{marginBottom:16}}>
+        <div className="card" style={{textAlign:'center',padding:28}}>
+          <ScoreRing score={user.score}/>
+          <div style={{marginTop:16,marginBottom:8}}>
+            <div style={{fontFamily:'var(--font-display)',fontSize:18,fontWeight:700}}>{user.name}</div>
+            <div style={{fontSize:12,color:'var(--text3)',fontFamily:'var(--font-mono)'}}>{user.dept}</div>
+          </div>
+          <div style={{fontSize:13,color:user.trend>0?'var(--green)':'var(--red)',marginBottom:16}}>
+            {user.trend>0?'↑ Improving':'↓ Declining'} · {user.trend>0?'+':''}{user.trend} pts this month
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>
+            {badges.map((b,i)=><span key={i} className="badge badge-purple">{b}</span>)}
+          </div>
+        </div>
+
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="card">
+            <div className="card-header"><div className="card-title">Performance Overview</div></div>
+            <div className="grid-2" style={{gap:12}}>
+              {[
+                {label:'Campaigns Received',val:user.campaigns,icon:'📧',col:'var(--accent)'},
+                {label:'Times Failed',val:user.failed,icon:'❌',col:'var(--red)'},
+                {label:'Trainings Completed',val:user.trained,icon:'✅',col:'var(--green)'},
+                {label:'Attacks Reported',val:Math.max(0,user.campaigns-user.failed-1),icon:'🚩',col:'var(--yellow)'},
+              ].map((s,i)=>(
+                <div key={i} className="report-stat">
+                  <div style={{fontSize:20,marginBottom:4}}>{s.icon}</div>
+                  <div className="report-num" style={{color:s.col}}>{s.val}</div>
+                  <div className="report-lbl">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><div className="card-title">Score Trend</div></div>
+            <div style={{height:60}}>
+              <SparkLine data={[35,28,42,38,55,48,62,user.score]}/>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'var(--text3)',fontFamily:'var(--font-mono)',marginTop:4}}>
+              <span>8 weeks ago</span><span>Now</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-header"><div className="card-title">Recent Activity</div></div>
+          <div>
+            {recentActivity.map((a,i)=>(
+              <div key={i} className="activity-item">
+                <div className="activity-dot" style={{background:a.dot==='red'?'var(--red)':a.dot==='green'?'var(--green)':'var(--yellow)'}}/>
+                <div className="activity-content">
+                  <div className="activity-text" dangerouslySetInnerHTML={{__html:a.text}}/>
+                  <div className="activity-time">{a.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><div className="card-title">Training Library</div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {ALL_SCENARIOS.slice(0,5).map(s=>(
+              <div key={s.id} className="campaign-row" onClick={()=>setActiveTraining(s)}>
+                <span style={{fontSize:20}}>{s.icon}</span>
+                <div className="campaign-info">
+                  <div className="campaign-name">{s.name}</div>
+                  <div className="campaign-meta">{s.channel} attack · {s.risk}</div>
+                </div>
+                <button className="btn btn-secondary btn-sm">Learn</button>
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-secondary btn-full" style={{marginTop:12}} onClick={()=>onNavigate('training')}>View All 15 Modules →</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScenariosPage({onSimulate}) {
+  const [activeTab, setActiveTab] = useState('corporate');
+  const [selected, setSelected] = useState(null);
+
+  return (
+    <div className="page-content fadeIn">
+      <div className="page-header">
+        <div className="page-title">Attack Scenarios</div>
+        <div className="page-sub">15 real-world phishing simulations across 3 domains</div>
+      </div>
+
+      <div className="tabs">
+        {[['corporate','🏢 Corporate'],['banks','🏦 Banks'],['general','👥 General Public']].map(([t,l])=>(
+          <div key={t} className={`tab ${activeTab===t?'active':''}`} onClick={()=>setActiveTab(t)}>{l}</div>
+        ))}
+      </div>
+
+      <div className="scenario-grid">
+        {SCENARIOS[activeTab].map((s,i)=>(
+          <div key={s.id} className={`scenario-card ${selected?.id===s.id?'selected':''}`}
+            style={{'--domain-color':activeTab==='corporate'?'var(--corporate)':activeTab==='banks'?'var(--banks)':'var(--general)'}}
+            onClick={()=>setSelected(selected?.id===s.id?null:s)}>
+            <div className="scenario-num">#{i+1} · {s.channel} attack</div>
+            <div style={{fontSize:24,marginBottom:8}}>{s.icon}</div>
+            <div className="scenario-name">{s.name}</div>
+            <div className="scenario-risk" style={{marginBottom:10}}>{s.desc}</div>
+            <div style={{display:'flex',gap:6,alignItems:'center'}}>
+              <span className={`badge ${s.risk==='CRITICAL'?'badge-red':'badge-yellow'}`}>{s.risk}</span>
+              <span className="badge badge-gray">{s.channel}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selected && (
+        <div className="card fadeIn" style={{marginTop:16}}>
+          <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+            <span style={{fontSize:36}}>{selected.icon}</span>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:'var(--font-display)',fontSize:18,fontWeight:700,marginBottom:4}}>{selected.name}</div>
+              <div style={{color:'var(--text2)',marginBottom:12}}>{selected.desc}</div>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                <button className="btn btn-danger" onClick={()=>onSimulate(selected)}>▶ Launch Simulation</button>
+                <button className="btn btn-secondary" onClick={()=>window.dispatchEvent(new CustomEvent('startTraining',{detail:selected}))}>📚 View Training Module</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CampaignsPage() {
+  const [campaigns, setCampaigns] = useState(DEMO_CAMPAIGNS);
+  const [showWizard, setShowWizard] = useState(false);
+
+  return (
+    <div className="page-content fadeIn">
+      {showWizard && <CampaignWizard onClose={()=>setShowWizard(false)} onCreate={c=>setCampaigns(cs=>[c,...cs])}/>}
+      <div className="page-header" style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between'}}>
+        <div>
+          <div className="page-title">Campaigns</div>
+          <div className="page-sub">All phishing simulation campaigns</div>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setShowWizard(true)}>+ New Campaign</button>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:12}}>
+        {campaigns.map(c=>{
+          const clickRate = c.sent ? Math.round(c.clicked/c.sent*100) : 0;
+          const reportRate = c.sent ? Math.round(c.reported/c.sent*100) : 0;
+          return (
+            <div key={c.id} className="card">
+              <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+                <DomainBadge domain={c.domain}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                    <div style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:15}}>{c.name}</div>
+                    <StatusBadge status={c.status}/>
+                  </div>
+                  <div style={{fontSize:12,color:'var(--text3)',fontFamily:'var(--font-mono)',marginBottom:12}}>{c.date} · {ALL_SCENARIOS.find(s=>s.id===c.scenario)?.name}</div>
+                  <div className="grid-3" style={{gap:16}}>
+                    {[{l:'Sent',v:c.sent,col:'var(--text)'},{l:'Clicked',v:`${clickRate}%`,col:'var(--red)'},{l:'Reported',v:`${reportRate}%`,col:'var(--green)'}].map(({l,v,col})=>(
+                      <div key={l}>
+                        <div style={{fontSize:10,color:'var(--text3)',fontFamily:'var(--font-mono)',marginBottom:2}}>{l}</div>
+                        <div style={{fontFamily:'var(--font-display)',fontSize:22,fontWeight:800,color:col}}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {c.sent > 0 && (
+                    <div style={{marginTop:10}}>
+                      <div style={{display:'flex',height:6,borderRadius:3,overflow:'hidden',gap:2}}>
+                        <div style={{width:`${clickRate}%`,background:'var(--red)',opacity:0.8}}/>
+                        <div style={{width:`${Math.round(c.submitted/c.sent*100)}%`,background:'var(--orange)',opacity:0.8}}/>
+                        <div style={{width:`${reportRate}%`,background:'var(--green)',opacity:0.8}}/>
+                        <div style={{flex:1,background:'rgba(230,220,248,0.85)'}}/>
+                      </div>
+                      <div style={{display:'flex',gap:12,marginTop:4,fontSize:10,color:'var(--text3)'}}>
+                        <span style={{color:'var(--red)'}}>■ Clicked</span>
+                        <span style={{color:'var(--orange)'}}>■ Submitted</span>
+                        <span style={{color:'var(--green)'}}>■ Reported</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function UsersPage() {
+  const [search, setSearch] = useState('');
+  const filtered = DEMO_USERS.filter(u=>u.name.toLowerCase().includes(search.toLowerCase())||u.dept.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="page-content fadeIn">
+      <div className="page-header">
+        <div className="page-title">Users</div>
+        <div className="page-sub">Manage users and monitor individual risk scores</div>
+      </div>
+      <div className="card">
+        <div style={{marginBottom:16}}>
+          <input className="form-input" placeholder="Search users..." value={search} onChange={e=>setSearch(e.target.value)} style={{maxWidth:300}}/>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th><th>Domain</th><th>Risk Score</th><th>Trend</th><th>Campaigns</th><th>Failed</th><th>Trained</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(u=>(
+                <tr key={u.id}>
+                  <td>
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <Avatar initials={u.avatar} size={30}/>
+                      <div>
+                        <div style={{color:'var(--text)',fontWeight:500}}>{u.name}</div>
+                        <div style={{fontSize:10,color:'var(--text3)',fontFamily:'var(--font-mono)'}}>{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><DomainBadge domain={u.domain}/></td>
+                  <td><RiskBadge score={u.score}/></td>
+                  <td><span style={{color:u.trend>0?'var(--green)':'var(--red)',fontFamily:'var(--font-mono)',fontSize:12}}>{u.trend>0?'+':''}{u.trend}</span></td>
+                  <td>{u.campaigns}</td>
+                  <td><span style={{color:'var(--red)'}}>{u.failed}</span></td>
+                  <td><span style={{color:'var(--green)'}}>{u.trained}</span></td>
+                  <td>{u.score<40?<span className="badge badge-red">At Risk</span>:u.trend>0?<span className="badge badge-green">Improving</span>:<span className="badge badge-gray">Stable</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrainingPage() {
+  const [activeTraining, setActiveTraining] = useState(null);
+
+  useEffect(() => {
+    const handler = (e) => setActiveTraining(e.detail);
+    window.addEventListener('startTraining', handler);
+    return () => window.removeEventListener('startTraining', handler);
+  }, []);
+
+  if(activeTraining) {
+    return (
+      <div className="page-content fadeIn">
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
+          <button className="btn btn-secondary btn-sm" onClick={()=>setActiveTraining(null)}>← Back to Library</button>
+        </div>
+        <TrainingModule scenario={activeTraining} onComplete={()=>setActiveTraining(null)}/>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-content fadeIn">
+      <div className="page-header">
+        <div className="page-title">Training Library</div>
+        <div className="page-sub">15 micro-training modules — one for each attack type</div>
+      </div>
+      {[['corporate','🏢 Corporate Attacks'],['banks','🏦 Banking Attacks'],['general','👥 General Public Attacks']].map(([d,label])=>(
+        <div key={d} style={{marginBottom:24}}>
+          <div style={{fontFamily:'var(--font-display)',fontWeight:700,fontSize:16,marginBottom:12,color:'var(--text)'}}>{label}</div>
+          <div className="scenario-grid">
+            {SCENARIOS[d].map(s=>(
+              <div key={s.id} className="scenario-card" style={{'--domain-color':d==='corporate'?'var(--corporate)':d==='banks'?'var(--banks)':'var(--general)',cursor:'pointer'}} onClick={()=>setActiveTraining(s)}>
+                <span style={{fontSize:24}}>{s.icon}</span>
+                <div style={{fontFamily:'var(--font-display)',fontWeight:600,fontSize:13,margin:'8px 0 4px'}}>{s.name}</div>
+                <div style={{fontSize:11,color:'var(--text3)',marginBottom:10,lineHeight:1.4}}>{s.desc}</div>
+                <div style={{display:'flex',gap:6}}>
+                  <span className="badge badge-blue">3 min lesson</span>
+                  <span className="badge badge-gray">Quiz</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReportsPage() {
+  return (
+    <div className="page-content fadeIn">
+      <div className="page-header">
+        <div className="page-title">Compliance Reports</div>
+        <div className="page-sub">Organisation-wide security awareness analytics</div>
+      </div>
+      <div className="stats-grid" style={{marginBottom:24}}>
+        {[{l:'Total Simulations Run',v:165,col:'var(--accent)'},{l:'Avg Failure Rate',v:'54%',col:'var(--red)'},{l:'Trainings Completed',v:42,col:'var(--green)'},{l:'Compliance Score',v:'B+',col:'var(--yellow)'}].map(({l,v,col})=>(
+          <div key={l} className="stat-card" style={{'--accent-color':col}}>
+            <div className="stat-label">{l}</div>
+            <div className="stat-value" style={{color:col}}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-header"><div className="card-title">Vulnerability by Department</div></div>
+          <BarChart data={[{label:'Finance',value:68},{label:'Customer Care',value:62},{label:'HR',value:58},{label:'Operations',value:45},{label:'Engineering',value:32},{label:'Marketing',value:28}]} colors={['#ff4466','#ff4466','#ff8c42','#ffd166','#00e5a0','#00e5a0']}/>
+        </div>
+        <div className="card">
+          <div className="card-header"><div className="card-title">Improvement Over Time</div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            {[{month:'January',score:38},{month:'February',score:42},{month:'March',score:47},{month:'April',score:52}].map(({month,score})=>(
+              <div key={month} className="chart-bar-row">
+                <div className="chart-bar-label">{month}</div>
+                <div className="chart-bar-track"><div className="chart-bar-fill" style={{width:`${score}%`,background:'var(--accent)'}}/></div>
+                <div className="chart-bar-val">{score}</div>
+              </div>
+            ))}
+          </div>
+          <div className="banner banner-success" style={{marginTop:16}}>
+            📈 Organisation awareness improved by 37% over 4 months
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN APP SHELL
+// ═══════════════════════════════════════════════════════════════
+
+function AppShell({role, user, onLogout}) {
+  const [page, setPage] = useState('dashboard');
+  const [simScenario, setSimScenario] = useState(null);
+  const [reportSuccess, setReportSuccess] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => { if(page !== 'training') setPage('training'); };
+    window.addEventListener('startTraining', handler);
+    return () => window.removeEventListener('startTraining', handler);
+  }, [page]);
+
+  const handleReport = () => {
+    setSimScenario(null);
+    setReportSuccess(true);
+    setTimeout(()=>setReportSuccess(false), 4000);
+  };
+
+  if(simScenario) {
+    return <SimPage scenario={simScenario} onCatch={()=>{}} onReport={handleReport}/>;
+  }
+
+  const adminNav = [
+    {label:'MAIN',items:[
+      {id:'dashboard',icon:'⬡',label:'Command Center'},
+      {id:'campaigns',icon:'📡',label:'Campaigns',badge:'2'},
+      {id:'users',icon:'👥',label:'Users'},
+      {id:'scenarios',icon:'🎯',label:'Scenarios'},
+    ]},
+    {label:'ANALYTICS',items:[
+      {id:'reports',icon:'📊',label:'Reports'},
+      {id:'training',icon:'📚',label:'Training Library'},
+    ]},
+  ];
+
+  const trainerNav = [
+    {label:'MAIN',items:[
+      {id:'dashboard',icon:'⬡',label:'Team Intelligence'},
+      {id:'campaigns',icon:'📡',label:'Campaigns'},
+      {id:'scenarios',icon:'🎯',label:'Scenarios'},
+    ]},
+    {label:'TRAINING',items:[
+      {id:'training',icon:'📚',label:'Training Library'},
+    ]},
+  ];
+
+  const userNav = [
+    {label:'MY PROFILE',items:[
+      {id:'dashboard',icon:'⬡',label:'My Dashboard'},
+      {id:'training',icon:'📚',label:'Training Modules'},
+    ]},
+    {label:'EXPLORE',items:[
+      {id:'scenarios',icon:'🎯',label:'Scenario Library'},
+    ]},
+  ];
+
+  const navMap = {admin:adminNav,trainer:trainerNav,user:userNav};
+  const nav = navMap[role] || userNav;
+
+  const pageTitle = {dashboard:role==='admin'?'Command Center':role==='trainer'?'Team Intelligence':'My Dashboard',campaigns:'Campaigns',users:'Users',scenarios:'Attack Scenarios',reports:'Reports',training:'Training Library'};
+
+  return (
+    <div className="app-shell">
+      <div className="scan-overlay"><div className="scan-line"/></div>
+      <div className="sidebar">
+        <div className="sidebar-logo">
+          <div className="logo-mark">
+            <div className="logo-icon">🛡</div>
+            <div className="logo-text">CyberAware</div>
+          </div>
+          <div className="logo-sub">Attack Simulation Platform</div>
+        </div>
+        <div className="sidebar-nav">
+          {nav.map(section=>(
+            <div key={section.label}>
+              <div className="nav-section">{section.label}</div>
+              {section.items.map(item=>(
+                <div key={item.id} className={`nav-item ${page===item.id?'active':''}`} onClick={()=>setPage(item.id)}>
+                  <span className="nav-icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                  {item.badge && <span className="nav-badge">{item.badge}</span>}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="sidebar-footer">
+          <div className="user-card">
+            <Avatar initials={user.avatar} size={32}/>
+            <div className="user-info">
+              <div className="user-name">{user.name.split(' ')[0]}</div>
+              <div className="user-role">{role}</div>
+            </div>
+            <div style={{marginLeft:'auto',cursor:'pointer',color:'var(--text3)',fontSize:16}} onClick={onLogout} title="Logout">⏏</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="main-content">
+        <div className="topbar">
+          <div>
+            <div className="topbar-title">{pageTitle[page]}</div>
+            <div className="topbar-breadcrumb">CyberAware / {pageTitle[page]}</div>
+          </div>
+          <div className="topbar-actions">
+            {reportSuccess && <span className="badge badge-green">✓ Attack Reported! +15 pts</span>}
+            {role !== 'user' && page==='scenarios' && (
+              <button className="topbar-btn success" onClick={()=>{}}>▶ Run Simulation</button>
+            )}
+            <button className="topbar-btn" onClick={onLogout}>Logout</button>
+          </div>
+        </div>
+
+        {page==='dashboard' && role==='admin' && <AdminDashboard onNavigate={setPage}/>}
+        {page==='dashboard' && role==='trainer' && <TrainerDashboard onNavigate={setPage}/>}
+        {page==='dashboard' && role==='user' && <UserDashboard user={user} onNavigate={setPage} onSimulate={setSimScenario}/>}
+        {page==='campaigns' && <CampaignsPage/>}
+        {page==='users' && <UsersPage/>}
+        {page==='scenarios' && <ScenariosPage onSimulate={setSimScenario}/>}
+        {page==='reports' && <ReportsPage/>}
+        {page==='training' && <TrainingPage/>}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════════
+
+function LoginPage({onLogin}) {
+  const [role, setRole] = useState('admin');
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const demos = {
+    admin:{name:'Admin User',email:'admin@cyberaware.in',avatar:'AD',dept:'Security Team',score:85,trend:5},
+    trainer:{name:'Trainer Kumar',email:'trainer@cyberaware.in',avatar:'TK',dept:'L&D Team',score:80,trend:8},
+    user:{name:'Priya Sharma',email:'priya@corp.in',avatar:'PS',dept:'Finance',score:42,trend:-12},
+  };
+
+  const fill = (r) => { setRole(r); setEmail(demos[r].email); setPass('password'); };
+
+  const handleLogin = async () => {
+    if(!email||!pass) { setError('Please enter email and password'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const data = await apiCall('POST', '/api/auth/login', { email, password: pass });
+      localStorage.setItem('cyberaware_token', data.token);
+      onLogin(data.user.role, {
+        name:   data.user.name,
+        email:  data.user.email,
+        avatar: data.user.avatar || email[0].toUpperCase(),
+        dept:   data.user.dept  || '',
+        score:  data.user.score || 75,
+        trend:  data.user.trend || 0,
+      });
+    } catch(err) {
+      setError(err.message || 'Login failed. Check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-page">
+      <div className="login-bg"/><div className="login-grid"/>
+      <div className="login-box">
+        <div className="login-logo">
+          <div className="login-logo-icon">🛡</div>
+          <div className="login-title">CyberAware</div>
+          <div className="login-sub">Attack Simulation Platform</div>
+        </div>
+        <div className="login-card">
+          <div style={{fontFamily:'var(--font-mono)',fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:8}}>Select Role (Demo)</div>
+          <div className="role-select" style={{marginBottom:20}}>
+            {[['admin','🛡','Admin'],['trainer','📊','Trainer'],['user','👤','User']].map(([r,icon,label])=>(
+              <div key={r} className={`role-btn ${role===r?'active':''}`} onClick={()=>fill(r)}>
+                <div className="role-btn-icon">{icon}</div>
+                <div className="role-btn-label">{label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="form-group">
+            <label className="form-label">Email</label>
+            <input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@company.in"/>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input className="form-input" type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••"/>
+          </div>
+          {error && <div className="banner banner-danger" style={{marginBottom:12}}>{error}</div>}
+          <button className="btn btn-primary btn-full btn-lg" onClick={handleLogin} disabled={loading}>
+            {loading ? '⟳ Authenticating...' : '→ Sign In'}
+          </button>
+          <div style={{textAlign:'center',marginTop:12,fontSize:11,color:'var(--text3)',fontFamily:'var(--font-mono)'}}>
+            Click a role above to auto-fill demo credentials
+          </div>
+        </div>
+        <div style={{textAlign:'center',marginTop:20,fontSize:11,color:'var(--text3)',fontFamily:'var(--font-mono)'}}>
+          POWERED BY AI · SECURED BY DESIGN
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROOT
+// ═══════════════════════════════════════════════════════════════
+
+function App() {
+  const [auth, setAuth] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('cyberaware_token');
+    if (token) {
+      apiCall('GET', '/api/users/me')
+        .then(user => { setAuth({ role: user.role, user }); setChecking(false); })
+        .catch(() => { localStorage.removeItem('cyberaware_token'); setChecking(false); });
+    } else {
+      setChecking(false);
+    }
+  }, []);
+
+  const login  = (role, user) => setAuth({ role, user });
+  const logout = () => {
+    localStorage.removeItem('cyberaware_token');
+    setAuth(null);
+  };
+
+  if (checking) return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg)',color:'var(--text2)',fontFamily:'var(--font-mono)',fontSize:13}}>
+      ⟳ Restoring session...
+    </div>
+  );
+
+  if(!auth) return <LoginPage onLogin={login}/>;
+  return <AppShell role={auth.role} user={auth.user} onLogout={logout}/>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<canvas id="particle-canvas"></canvas>
+<script>
+(function(){
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [], lines = [], animId;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  const COLORS = [
+    'rgba(0,200,180,', // bright lavender
+    'rgba(150,230,220,', // pale lilac
+    'rgba(0,180,160,', // medium lavender
+    'rgba(200,245,238,', // near-white lavender
+    'rgba(80,210,195,', // soft violet
+    'rgba(160,235,228,', // pink lavender
+    'rgba(0,188,212,', // periwinkle
+    'rgba(128,222,234,', // orchid tint
+  ];
+
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+
+  function createParticle(){
+    const color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    return {
+      x: rnd(0, W),
+      y: rnd(0, H),
+      r: rnd(0.8, 3.2),
+      vx: rnd(-0.25, 0.25),
+      vy: rnd(-0.35, -0.08),
+      alpha: rnd(0.3, 1.0),
+      alphaDir: Math.random() > 0.5 ? 1 : -1,
+      alphaSpeed: rnd(0.003, 0.012),
+      color,
+      twinkle: Math.random() > 0.6,
+    };
+  }
+
+  function createGlowOrb(){
+    const color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    return {
+      x: rnd(0, W),
+      y: rnd(0, H),
+      r: rnd(60, 180),
+      vx: rnd(-0.08, 0.08),
+      vy: rnd(-0.06, 0.06),
+      alpha: rnd(0.08, 0.22),
+      alphaDir: 1,
+      alphaSpeed: rnd(0.0005, 0.002),
+      color,
+    };
+  }
+
+  function init(){
+    particles = [];
+    lines = [];
+    const count = Math.floor((W * H) / 7000);
+    for(let i=0; i<count; i++) particles.push(createParticle());
+    for(let i=0; i<7; i++) lines.push(createGlowOrb());
+  }
+
+  function drawParticles(){
+    // Soft lavender background
+    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+    bgGrad.addColorStop(0,   '#c8f0ea');
+    bgGrad.addColorStop(0.35,'#d8f5f0');
+    bgGrad.addColorStop(0.65,'#cceee8');
+    bgGrad.addColorStop(1,   '#b8e8e0');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw ambient glow orbs (nebula clouds)
+    lines.forEach(orb => {
+      const grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
+      grad.addColorStop(0, orb.color + orb.alpha + ')');
+      grad.addColorStop(1, orb.color + '0)');
+      ctx.beginPath();
+      ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Move orb
+      orb.x += orb.vx;
+      orb.y += orb.vy;
+      if(orb.x < -orb.r) orb.x = W + orb.r;
+      if(orb.x > W + orb.r) orb.x = -orb.r;
+      if(orb.y < -orb.r) orb.y = H + orb.r;
+      if(orb.y > H + orb.r) orb.y = -orb.r;
+
+      // Pulse alpha
+      orb.alpha += orb.alphaDir * orb.alphaSpeed;
+      if(orb.alpha > 0.28 || orb.alpha < 0.05) orb.alphaDir *= -1;
+    });
+
+    // Connect nearby particles with faint lines
+    for(let i=0; i<particles.length; i++){
+      for(let j=i+1; j<particles.length; j++){
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 90){
+          const opacity = (1 - dist/90) * 0.22;
+          ctx.strokeStyle = 'rgba(0,150,135,' + opacity + ')';
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw and update particles
+    particles.forEach(p => {
+      // Glow effect
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3.5);
+      glow.addColorStop(0, p.color + (p.alpha * 0.9) + ')');
+      glow.addColorStop(0.4, p.color + (p.alpha * 0.3) + ')');
+      glow.addColorStop(1, p.color + '0)');
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * 3.5, 0, Math.PI*2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+
+      // Core dot
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = p.color + p.alpha + ')';
+      ctx.fill();
+
+      // Move
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Wrap
+      if(p.y < -10) p.y = H + 10;
+      if(p.x < -10) p.x = W + 10;
+      if(p.x > W + 10) p.x = -10;
+
+      // Twinkle
+      if(p.twinkle){
+        p.alpha += p.alphaDir * p.alphaSpeed;
+        if(p.alpha > 1.0){ p.alpha = 1.0; p.alphaDir = -1; }
+        if(p.alpha < 0.15){ p.alpha = 0.15; p.alphaDir = 1; }
+      }
+    });
+  }
+
+  function loop(){
+    drawParticles();
+    animId = requestAnimationFrame(loop);
+  }
+
+  resize();
+  init();
+  loop();
+
+  window.addEventListener('resize', ()=>{ resize(); init(); });
+})();
+</script>
+</body>
+</html>
